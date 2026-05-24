@@ -115,14 +115,14 @@ Layout cible (portrait 320×480), **sans bandeau d'heure** :
 
 ```
 ┌─────────────────────────────────┐
-│  Léa                ↗           │
-│   142  mg/dL              2:14  │
+│  Léa                ↗         ┃ │
+│   142  mg/dL                  ┃ │
 ├─────────────────────────────────┤
-│  Tom                →           │
-│    98  mg/dL              1:47  │
+│  Tom                →         ┃ │
+│    98  mg/dL                  ┃ │
 ├─────────────────────────────────┤
-│  Marc               ↘           │
-│   185  mg/dL              3:02  │
+│  Marc               ↘         ┃ │
+│   185  mg/dL                  ┃ │
 └─────────────────────────────────┘
 ```
 
@@ -131,10 +131,11 @@ Layout cible (portrait 320×480), **sans bandeau d'heure** :
 - **Valeur** : police très grande (équivalent `u8g2_font_inb46_mn` ou similaire), centrée dans la ligne. **Seul élément potentiellement coloré** selon zone hypo/normal/hyper si `glucoseColor` activé.
 - **Unité** : petite, à côté de la valeur, en blanc.
 - **Flèche** : grande, alignée à droite haut. Réutilise la logique de dessin triangulaire existante (`Gestion.cpp`).
-- **Âge** : format `m:ss`, aligné à droite bas. Couleur :
-  - blanc < 10 min
-  - orange 10-15 min
-  - rouge > 15 min ou si valeur manquante
+- **Âge — jauge verticale** : fine ligne (~4-6 px de large) collée au bord droit de chaque zone, sur toute la hauteur de la zone. Remplissage **de bas en haut**.
+  - **Cycle normal (0 → 5 min)** : la jauge se remplit linéairement, en **blanc**. À l'arrivée d'une nouvelle mesure (typiquement à 5 min), elle se vide d'un coup et le cycle recommence.
+  - **Refresh en retard (5 → 15 min)** : la jauge **reste pleine** et passe en **orange**.
+  - **Critique (> 15 min ou valeur manquante)** : la jauge **reste pleine** et passe en **rouge**.
+  - Intuition : tant que la jauge "respire" (se remplit puis se vide toutes les 5 min), la chaîne d'acquisition fonctionne. Une jauge figée pleine = alerte visuelle immédiate.
 - **Séparateurs** : lignes horizontales fines en gris foncé entre les 3 zones.
 - **Pas de couleur de fond** : fond noir uniforme sur les 3 zones (seule la valeur se colore éventuellement).
 
