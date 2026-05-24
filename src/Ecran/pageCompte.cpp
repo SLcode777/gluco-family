@@ -268,7 +268,7 @@ void handleTouch_Compte(uint16_t touchX, uint16_t touchY)
         }
         else
         {
-            loginSuccess = loginDexcomShare();
+            loginSuccess = loginDexcomShare(persons[0]);
         }
         
         if (loginSuccess)

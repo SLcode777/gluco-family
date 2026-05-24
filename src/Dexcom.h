@@ -6,6 +6,6 @@
 
 // Dexcom Share API functions
 void LectureDexcom();
-bool loginDexcomShare();
-void getDexcomReadings();
+bool loginDexcomShare(Person& person);
+void getDexcomReadings(Person& person);
 void clearDexcomCache();

@@ -6,10 +6,6 @@
 #include "Dexcom.h"
 #include "Langues/Langue.h"
 
-// Dexcom Share API variables
-static String dexcomSessionId = "";
-static String dexcomAccountId = "";
-
 // Dexcom Share API base URL, Non-US (default)
 static String dexcomBaseURL = "https://shareous1.dexcom.com";
 
@@ -20,7 +16,7 @@ const char* DEXCOM_GLUCOSE_ENDPOINT = "/ShareWebServices/Services/Publisher/Read
 
 const char* APP_ID = "d89443d2-327c-4a6f-89e5-496bbb0317db";
 
-bool loginDexcomShare()
+bool loginDexcomShare(Person& person)
 {
     ServerConnu = false;
     
@@ -38,7 +34,7 @@ bool loginDexcomShare()
     String response;
     
     // Step 1: Authenticate to get account ID (only if not cached)
-    if (dexcomAccountId.length() == 0) {
+    if (person.dexcomAccountId.length() == 0) {
         Serial.println("Récupération de l'Account ID...");
         https.begin(dexcomBaseURL + String(DEXCOM_AUTHENTICATE_ENDPOINT));
         https.setTimeout(15000);
@@ -47,8 +43,8 @@ bool loginDexcomShare()
         https.addHeader("User-Agent", "Dexcom Share/3.0.2.11 CFNetwork/711.2.23 Darwin/14.0.0");
         
         JsonDocument authDoc;
-        authDoc["accountName"] = persons[0].dexcomUsername;
-        authDoc["password"] = persons[0].dexcomPassword;
+        authDoc["accountName"] = person.dexcomUsername;
+        authDoc["password"] = person.dexcomPassword;
         authDoc["applicationId"] = APP_ID;
         
         serializeJson(authDoc, payload);
@@ -80,8 +76,8 @@ bool loginDexcomShare()
             return false;
         }
         
-        dexcomAccountId = response.substring(1, response.length() - 1);
-        Serial.println("Account ID obtenu: " + String(dexcomAccountId));
+        person.dexcomAccountId = response.substring(1, response.length() - 1);
+        Serial.println("Account ID obtenu: " + String(person.dexcomAccountId));
     } else {
         Serial.println("Utilisation de l'Account ID en cache");
     }
@@ -96,8 +92,8 @@ bool loginDexcomShare()
     https.addHeader("User-Agent", "Dexcom Share/3.0.2.11 CFNetwork/711.2.23 Darwin/14.0.0");
     
     JsonDocument loginDoc;
-    loginDoc["accountId"] = dexcomAccountId;
-    loginDoc["password"] = persons[0].dexcomPassword;
+    loginDoc["accountId"] = person.dexcomAccountId;
+    loginDoc["password"] = person.dexcomPassword;
     loginDoc["applicationId"] = APP_ID;
     
     serializeJson(loginDoc, payload);
@@ -129,20 +125,20 @@ bool loginDexcomShare()
         return false;
     }
     
-    dexcomSessionId = response.substring(1, response.length() - 1);
-    Serial.println("Session ID: " + String(dexcomSessionId));
+    person.dexcomSessionId = response.substring(1, response.length() - 1);
+    Serial.println("Session ID: " + String(person.dexcomSessionId));
     
-    return dexcomSessionId.length() > 30;
+    return person.dexcomSessionId.length() > 30;
 }
 
-void getDexcomReadings()
+void getDexcomReadings(Person& person)
 {
     HTTPClient https;
     
-    Serial.println("getDexcomReadings - Session ID: " + dexcomSessionId);
+    Serial.println("getDexcomReadings - Session ID: " + person.dexcomUsername + " - Session ID: " + person.dexcomSessionId);
     
     String url = dexcomBaseURL + String(DEXCOM_GLUCOSE_ENDPOINT) +
-                 "?sessionId=" + dexcomSessionId +
+                 "?sessionId=" + person.dexcomSessionId +
                  "&minutes=1440&maxCount=288"; // 288 = 24h of 5-min readings
 
     Serial.println("URL Dexcom: " + url);
@@ -189,20 +185,20 @@ void getDexcomReadings()
             const char* trend = latestReading["Trend"];
             const char* timestamp = latestReading["WT"]; // Wall Time
             
-            persons[0].glucoseMgDl = mgdl;
+            person.glucoseMgDl = mgdl;
             
             // Map Dexcom trend
             // -1=DoubleDown, 0=undefined, 1=Down, 2=DownRight, 3=Flat, 4=UpRight, 5=Up, 6=DoubleUp
-            persons[0].trendArrow = 0; // Default to undefined
+            person.trendArrow = 0; // Default to undefined
             if (trend != nullptr) {
                 String trendStr = String(trend);
-                if (trendStr == "DoubleUp") persons[0].trendArrow = 6;        // DoubleUp
-                else if (trendStr == "SingleUp") persons[0].trendArrow = 5;   // Up
-                else if (trendStr == "FortyFiveUp") persons[0].trendArrow = 4; // UpRight
-                else if (trendStr == "Flat") persons[0].trendArrow = 3;       // Right (Flat)
-                else if (trendStr == "FortyFiveDown") persons[0].trendArrow = 2; // DownRight
-                else if (trendStr == "SingleDown") persons[0].trendArrow = 1; // Down
-                else if (trendStr == "DoubleDown") persons[0].trendArrow = -1; // DoubleDown
+                if (trendStr == "DoubleUp") person.trendArrow = 6;        // DoubleUp
+                else if (trendStr == "SingleUp") person.trendArrow = 5;   // Up
+                else if (trendStr == "FortyFiveUp") person.trendArrow = 4; // UpRight
+                else if (trendStr == "Flat") person.trendArrow = 3;       // Right (Flat)
+                else if (trendStr == "FortyFiveDown") person.trendArrow = 2; // DownRight
+                else if (trendStr == "SingleDown") person.trendArrow = 1; // Down
+                else if (trendStr == "DoubleDown") person.trendArrow = -1; // DoubleDown
             }
             
             // Parse timestamp - Dexcom format: "Date(1234567890000)"
@@ -211,40 +207,42 @@ void getDexcomReadings()
                 int startIdx = tsStr.indexOf('(') + 1;
                 int endIdx = tsStr.indexOf(')');
                 if (startIdx > 0 && endIdx > startIdx) {
-                    persons[0].lastGlyUnixTime = tsStr.substring(startIdx, endIdx - 3).toInt();
+                    person.lastGlyUnixTime = tsStr.substring(startIdx, endIdx - 3).toInt();
                 }
             }
             
-            String DateGly = unixToTimestamp(persons[0].lastGlyUnixTime);
-            EcranPrintln(HEURE + T("LastGlyco") + formatGlucoseValue(persons[0].glucoseMgDl) + " " + getGlucoseUnitLabel() + " " + T("le") + DateGly);
-            persons[0].lastReceptionMillis = millis();
+            String DateGly = unixToTimestamp(person.lastGlyUnixTime);
+            EcranPrintln(HEURE + T("LastGlyco") + formatGlucoseValue(person.glucoseMgDl) + " " + getGlucoseUnitLabel() + " " + T("le") + DateGly);
+            person.lastReceptionMillis = millis();
             
-            Serial.println("Glycémie: " + formatGlucoseValue(persons[0].glucoseMgDl) + " " + getGlucoseUnitLabel());
-            Serial.println("TrendArrow: " + String(persons[0].trendArrow));
-            Serial.println("Timestamp: " + String(persons[0].lastGlyUnixTime));
+            Serial.println("Glycémie: " + formatGlucoseValue(person.glucoseMgDl) + " " + getGlucoseUnitLabel());
+            Serial.println("TrendArrow: " + String(person.trendArrow));
+            Serial.println("Timestamp: " + String(person.lastGlyUnixTime));
             
-            // Store all readings in the glucose array
-            pointCountGly = 0;
-            for (int i = readings.size() - 1; i > -1; i--) {
-                if (pointCountGly >= MAX_POINTS) break;
-                
-                int value = readings[i]["Value"];
-                const char* ts = readings[i]["WT"];
-                
-                if (ts != nullptr) {
-                    String tsStr = String(ts);
-                    int startIdx = tsStr.indexOf('(') + 1;
-                    int endIdx = tsStr.indexOf(')');
-                    if (startIdx > 0 && endIdx > startIdx) {
-                        long unixTime = tsStr.substring(startIdx, endIdx - 3).toInt();
-                        glucoseValues[pointCountGly] = value;
-                        glucoseHeure[pointCountGly] = unixTime;
-                        pointCountGly++;
+            // Historical arrays kept only for person 0 (to be deleted in étape 4)
+            if (&person == &persons[0]) {
+                pointCountGly = 0;
+                for (int i = readings.size() - 1; i > -1; i--) {
+                    if (pointCountGly >= MAX_POINTS) break;
+                    
+                    int value = readings[i]["Value"];
+                    const char* ts = readings[i]["WT"];
+                    
+                    if (ts != nullptr) {
+                        String tsStr = String(ts);
+                        int startIdx = tsStr.indexOf('(') + 1;
+                        int endIdx = tsStr.indexOf(')');
+                        if (startIdx > 0 && endIdx > startIdx) {
+                            long unixTime = tsStr.substring(startIdx, endIdx - 3).toInt();
+                            glucoseValues[pointCountGly] = value;
+                            glucoseHeure[pointCountGly] = unixTime;
+                            pointCountGly++;
+                        }
                     }
                 }
             }
             Serial.println("Nombre de points Dexcom: " + String(pointCountGly));
-            persons[0].lastOkMillis = millis();
+            person.lastOkMillis = millis();
         } else {
             EcranPrintln(HEURE + T("GlucoFailed") + " (no data)", RGB565_ORANGE);
         }
@@ -258,40 +256,61 @@ void getDexcomReadings()
 
 void LectureDexcom()
 {
-    // Dexcom updates every 5 minutes (300 seconds) + 15 seconds extra
-    persons[0].recurMillis = 315000;
-    // Don't contact server if we have recent data
-    if (persons[0].ageSeconds < 315 && persons[0].lastGlyUnixTime > 0) {
-        // We have recent data, no need to poll yet
-        return;
-    } 
-    if (persons[0].ageSeconds > 500) {
-        persons[0].recurMillis = 90000; // 1.5 minutes if very old
-    } else if (persons[0].ageSeconds > 315) {
-        persons[0].recurMillis = 30000; // 30 seconds if data is old
+    // Global stagger: at least 20s between any 2 Dexcom polls to spread network load
+    static unsigned long lastAnyPollMillis = 0;
+    const unsigned long STAGGER_MS = 20000;
+
+    if (millis() - lastAnyPollMillis < STAGGER_MS && lastAnyPollMillis > 0) {
+        return; // too soon since last poll, wait
     }
-    
-    if (millis() - persons[0].lastReceptionMillis > persons[0].recurMillis || persons[0].lastDemandeMillis == 0) {
-        persons[0].lastDemandeMillis = millis();
-        
-        if (persons[0].dexcomUsername != "" && persons[0].dexcomPassword != "") {
-            Serial.println("Demande nouvelle glycémie Dexcom...");
-            if (loginDexcomShare()) {
-                getDexcomReadings();
-            }
-        } else {
-            EcranPrintln(T("DexcomIndefini"));
+
+    // Find the person most overdue for a refresh and poll them
+    for (int i = 0; i < MAX_PERSONS; i++) {
+        Person& person = persons[i];
+
+        if (!person.configured) continue;
+        if (person.sensorType != SENSOR_DEXCOM) continue;
+        if (person.dexcomUsername == "" || person.dexcomPassword == "") continue;
+
+        // Default polling interval: 5 min 15 s (Dexcom updates every 5 min + safety margin)
+        person.recurMillis = 315000;
+
+        // Skip if we already have recent data
+        if (person.ageSeconds < 315 && person.lastGlyUnixTime > 0) continue;
+
+        // Adaptive retry intervals
+        if (person.ageSeconds > 500) {
+            person.recurMillis = 90000; // 1.5 min if very stale (server might be down)
+        } else if (person.ageSeconds > 315) {
+            person.recurMillis = 30000; // 30 s if slightly overdue
         }
-        
-        persons[0].lastReceptionMillis = millis();
+
+        // Is it time to poll this person?
+        bool firstPoll = (person.lastDemandeMillis == 0);
+        bool intervalElapsed = (millis() - person.lastReceptionMillis > person.recurMillis);
+
+        if (firstPoll || intervalElapsed) {
+            Serial.println("Polling Dexcom for: " + person.dexcomUsername);
+            person.lastDemandeMillis = millis();
+
+            if (loginDexcomShare(person)) {
+                getDexcomReadings(person);
+            }
+
+            person.lastReceptionMillis = millis();
+            lastAnyPollMillis = millis();
+
+            // Only poll one person per call (to enforce stagger naturally)
+            return;
+        }
     }
 }
-
 void clearDexcomCache()
 {
-    Serial.println("Clearing Dexcom cache...");
-    dexcomSessionId = "";
-    dexcomAccountId = "";
+    Serial.println("Clearing Dexcom cache for all persons...");
+    for (int i = 0; i < MAX_PERSONS; i++) {
+        persons[i].dexcomSessionId = "";
+        persons[i].dexcomAccountId = "";
+    }
     dexcomBaseURL = "https://shareous1.dexcom.com";
 }
-

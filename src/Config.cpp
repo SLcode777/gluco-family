@@ -122,6 +122,8 @@ void InitPersons() {
     persons[i].sensorType = SENSOR_DEXCOM;  // MVP default
     persons[i].dexcomUsername = "";
     persons[i].dexcomPassword = "";
+    persons[i].dexcomSessionId;
+    persons[i].dexcomAccountId;
     persons[i].glucoseMgDl = 0;
     persons[i].trendArrow = 0;
     persons[i].lastGlyUnixTime = 0;

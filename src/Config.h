@@ -17,10 +17,15 @@ struct Person {
 
   SensorType sensorType;
 
+  // Dexcom Credentials
   String dexcomUsername;
   String dexcomPassword;
 
-// Last measurement
+  // Session cache (per-person, populated by loginDexcomShare)
+  String dexcomSessionId;
+  String dexcomAccountId;
+
+  // Last measurement
   int16_t glucoseMgDl;               // 0 = no measurement
   int8_t trendArrow;                 // 0 = unknown
   unsigned long lastGlyUnixTime;     // unix timestamp

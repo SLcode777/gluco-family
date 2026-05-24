@@ -92,6 +92,7 @@ void setup()
 
   //========== Anciens paramètres ==============
   ReadFichierParametres();
+
   LireSerial();
   // =========== Ecran =========================
   bool LangueNonDefini=false;
