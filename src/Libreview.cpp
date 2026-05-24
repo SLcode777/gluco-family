@@ -119,32 +119,32 @@ void getConnection()
     deserializeJson(doc, response);
     ConnectionJSON = response;
 
-    Glycemie = doc["data"][0]["glucoseItem"]["ValueInMgPerDl"].as<String>();
-    if (Glycemie == "")
+    String glycemieStr = doc["data"][0]["glucoseItem"]["ValueInMgPerDl"].as<String>();
+    if (glycemieStr == "")
     {
-      GlycemieVal = 0;
+      persons[0].glucoseMgDl = 0;
     }
     else
     {
-      GlycemieVal = Glycemie.toInt();
+      persons[0].glucoseMgDl = glycemieStr.toInt();
     }
     String DateGly = doc["data"][0]["glucoseItem"]["Timestamp"].as<String>();
-    targetLow = doc["data"][0]["targetLow"];
-    targetHigh = doc["data"][0]["targetHigh"];
-    S = HEURE + T("LastGlyco") + formatGlucoseValue(GlycemieVal) + " " + getGlucoseUnitLabel() + " " + T("le") + DateGly;
+    persons[0].targetLow = doc["data"][0]["targetLow"];
+    persons[0].targetHigh = doc["data"][0]["targetHigh"];
+    S = HEURE + T("LastGlyco") + formatGlucoseValue(persons[0].glucoseMgDl) + " " + getGlucoseUnitLabel() + " " + T("le") + DateGly;
     EcranPrintln(S);
-    TrendArrow = doc["data"][0]["glucoseItem"]["TrendArrow"].as<int8_t>();
-    lastReceptionGlycMillis = millis();
+    persons[0].trendArrow = doc["data"][0]["glucoseItem"]["TrendArrow"].as<int8_t>();
+    persons[0].lastReceptionMillis = millis();
     Serial.println();
-    Serial.println("TrendArrow : " + String(TrendArrow));
+    Serial.println("TrendArrow : " + String(persons[0].trendArrow));
     Serial.println();
-    Serial.println("targetLow : " + String(targetLow));
-    Serial.println("targetHigh : " + String(targetHigh));
+    Serial.println("targetLow : " + String(persons[0].targetLow));
+    Serial.println("targetHigh : " + String(persons[0].targetHigh));
 
     patientId = doc["data"][0]["patientId"].as<String>();
 
     const char *timestamp = doc["data"][0]["glucoseItem"]["Timestamp"].as<const char *>();
-    lastGlyUnixTime = convertToUnix(timestamp);
+    persons[0].lastGlyUnixTime = convertToUnix(timestamp);
     if (pointCountGly >= MAX_POINTS)
     {
       for (int i = 1; i < pointCountGly; i++)
@@ -154,10 +154,10 @@ void getConnection()
       }
       pointCountGly--;
     }
-    glucoseValues[pointCountGly] = GlycemieVal;
-    glucoseHeure[pointCountGly] = lastGlyUnixTime;
+    glucoseValues[pointCountGly] = persons[0].glucoseMgDl;
+    glucoseHeure[pointCountGly] = persons[0].lastGlyUnixTime;
     pointCountGly++;
-    lastGlycOkMillis = millis();
+    persons[0].lastOkMillis = millis();
   }
   else
   {
@@ -267,14 +267,14 @@ void LectureGlycemie()
 
     UserOK = false;
   }
-  recurGlycMillis = RecurrenceGlycemie;
-  if (AgeGlycemie > 300)     // Si la dernière glycémie a plus de 5 minutes (300s), on tente une nouvelle lecture
-    recurGlycMillis = 30000; // 30 secondes pour tenter de récupérer une nouvelle glycémie plus rapidement
-  if (AgeGlycemie > 500)     // On ne s'excite pas, on passe à 1.5 minute pour éviter de faire trop de requêtes si le serveur est en panne ou si on a un problème de connexion
-    recurGlycMillis = 90000;
-  if (millis() - lastReceptionGlycMillis > recurGlycMillis || lastDemandeGlycMillis == 0)
+  persons[0].recurMillis = RecurrenceGlycemie;
+  if (persons[0].ageSeconds > 300)     // Si la dernière glycémie a plus de 5 minutes (300s), on tente une nouvelle lecture
+    persons[0].recurMillis = 30000; // 30 secondes pour tenter de récupérer une nouvelle glycémie plus rapidement
+  if (persons[0].ageSeconds > 500)     // On ne s'excite pas, on passe à 1.5 minute pour éviter de faire trop de requêtes si le serveur est en panne ou si on a un problème de connexion
+    persons[0].recurMillis = 90000;
+  if (millis() - persons[0].lastReceptionMillis > persons[0].recurMillis || persons[0].lastDemandeMillis == 0)
   {
-    lastDemandeGlycMillis = millis(); // Met à jour le temps dernière demande de glycémie avant de faire la lecture
+    persons[0].lastDemandeMillis = millis(); // Met à jour le temps dernière demande de glycémie avant de faire la lecture
     if (libreEmail != "" && librePass != "")
     {
       Serial.println("On demande une nouvelle glycémie...");
@@ -284,7 +284,7 @@ void LectureGlycemie()
     {
       EcranPrintln(T("LinkUpIndefini"));
     }
-    lastReceptionGlycMillis = millis(); // Met à jour le temps du dernier relevé reussi ou pas  de glycémie
+    persons[0].lastReceptionMillis = millis(); // Met à jour le temps du dernier relevé reussi ou pas  de glycémie
   }
 }
 

@@ -47,8 +47,8 @@ bool loginDexcomShare()
         https.addHeader("User-Agent", "Dexcom Share/3.0.2.11 CFNetwork/711.2.23 Darwin/14.0.0");
         
         JsonDocument authDoc;
-        authDoc["accountName"] = dexcomUsername;
-        authDoc["password"] = dexcomPassword;
+        authDoc["accountName"] = persons[0].dexcomUsername;
+        authDoc["password"] = persons[0].dexcomPassword;
         authDoc["applicationId"] = APP_ID;
         
         serializeJson(authDoc, payload);
@@ -97,7 +97,7 @@ bool loginDexcomShare()
     
     JsonDocument loginDoc;
     loginDoc["accountId"] = dexcomAccountId;
-    loginDoc["password"] = dexcomPassword;
+    loginDoc["password"] = persons[0].dexcomPassword;
     loginDoc["applicationId"] = APP_ID;
     
     serializeJson(loginDoc, payload);
@@ -189,21 +189,20 @@ void getDexcomReadings()
             const char* trend = latestReading["Trend"];
             const char* timestamp = latestReading["WT"]; // Wall Time
             
-            GlycemieVal = mgdl;
-            Glycemie = String(mgdl);
+            persons[0].glucoseMgDl = mgdl;
             
             // Map Dexcom trend
             // -1=DoubleDown, 0=undefined, 1=Down, 2=DownRight, 3=Flat, 4=UpRight, 5=Up, 6=DoubleUp
-            TrendArrow = 0; // Default to undefined
+            persons[0].trendArrow = 0; // Default to undefined
             if (trend != nullptr) {
                 String trendStr = String(trend);
-                if (trendStr == "DoubleUp") TrendArrow = 6;        // DoubleUp
-                else if (trendStr == "SingleUp") TrendArrow = 5;   // Up
-                else if (trendStr == "FortyFiveUp") TrendArrow = 4; // UpRight
-                else if (trendStr == "Flat") TrendArrow = 3;       // Right (Flat)
-                else if (trendStr == "FortyFiveDown") TrendArrow = 2; // DownRight
-                else if (trendStr == "SingleDown") TrendArrow = 1; // Down
-                else if (trendStr == "DoubleDown") TrendArrow = -1; // DoubleDown
+                if (trendStr == "DoubleUp") persons[0].trendArrow = 6;        // DoubleUp
+                else if (trendStr == "SingleUp") persons[0].trendArrow = 5;   // Up
+                else if (trendStr == "FortyFiveUp") persons[0].trendArrow = 4; // UpRight
+                else if (trendStr == "Flat") persons[0].trendArrow = 3;       // Right (Flat)
+                else if (trendStr == "FortyFiveDown") persons[0].trendArrow = 2; // DownRight
+                else if (trendStr == "SingleDown") persons[0].trendArrow = 1; // Down
+                else if (trendStr == "DoubleDown") persons[0].trendArrow = -1; // DoubleDown
             }
             
             // Parse timestamp - Dexcom format: "Date(1234567890000)"
@@ -212,17 +211,17 @@ void getDexcomReadings()
                 int startIdx = tsStr.indexOf('(') + 1;
                 int endIdx = tsStr.indexOf(')');
                 if (startIdx > 0 && endIdx > startIdx) {
-                    lastGlyUnixTime = tsStr.substring(startIdx, endIdx - 3).toInt();
+                    persons[0].lastGlyUnixTime = tsStr.substring(startIdx, endIdx - 3).toInt();
                 }
             }
             
-            String DateGly = unixToTimestamp(lastGlyUnixTime);
-            EcranPrintln(HEURE + T("LastGlyco") + formatGlucoseValue(GlycemieVal) + " " + getGlucoseUnitLabel() + " " + T("le") + DateGly);
-            lastReceptionGlycMillis = millis();
+            String DateGly = unixToTimestamp(persons[0].lastGlyUnixTime);
+            EcranPrintln(HEURE + T("LastGlyco") + formatGlucoseValue(persons[0].glucoseMgDl) + " " + getGlucoseUnitLabel() + " " + T("le") + DateGly);
+            persons[0].lastReceptionMillis = millis();
             
-            Serial.println("Glycémie: " + formatGlucoseValue(GlycemieVal) + " " + getGlucoseUnitLabel());
-            Serial.println("TrendArrow: " + String(TrendArrow));
-            Serial.println("Timestamp: " + String(lastGlyUnixTime));
+            Serial.println("Glycémie: " + formatGlucoseValue(persons[0].glucoseMgDl) + " " + getGlucoseUnitLabel());
+            Serial.println("TrendArrow: " + String(persons[0].trendArrow));
+            Serial.println("Timestamp: " + String(persons[0].lastGlyUnixTime));
             
             // Store all readings in the glucose array
             pointCountGly = 0;
@@ -245,7 +244,7 @@ void getDexcomReadings()
                 }
             }
             Serial.println("Nombre de points Dexcom: " + String(pointCountGly));
-            lastGlycOkMillis = millis();
+            persons[0].lastOkMillis = millis();
         } else {
             EcranPrintln(HEURE + T("GlucoFailed") + " (no data)", RGB565_ORANGE);
         }
@@ -260,22 +259,22 @@ void getDexcomReadings()
 void LectureDexcom()
 {
     // Dexcom updates every 5 minutes (300 seconds) + 15 seconds extra
-    recurGlycMillis = 315000;
+    persons[0].recurMillis = 315000;
     // Don't contact server if we have recent data
-    if (AgeGlycemie < 315 && lastGlyUnixTime > 0) {
+    if (persons[0].ageSeconds < 315 && persons[0].lastGlyUnixTime > 0) {
         // We have recent data, no need to poll yet
         return;
     } 
-    if (AgeGlycemie > 500) {
-        recurGlycMillis = 90000; // 1.5 minutes if very old
-    } else if (AgeGlycemie > 315) {
-        recurGlycMillis = 30000; // 30 seconds if data is old
+    if (persons[0].ageSeconds > 500) {
+        persons[0].recurMillis = 90000; // 1.5 minutes if very old
+    } else if (persons[0].ageSeconds > 315) {
+        persons[0].recurMillis = 30000; // 30 seconds if data is old
     }
     
-    if (millis() - lastReceptionGlycMillis > recurGlycMillis || lastDemandeGlycMillis == 0) {
-        lastDemandeGlycMillis = millis();
+    if (millis() - persons[0].lastReceptionMillis > persons[0].recurMillis || persons[0].lastDemandeMillis == 0) {
+        persons[0].lastDemandeMillis = millis();
         
-        if (dexcomUsername != "" && dexcomPassword != "") {
+        if (persons[0].dexcomUsername != "" && persons[0].dexcomPassword != "") {
             Serial.println("Demande nouvelle glycémie Dexcom...");
             if (loginDexcomShare()) {
                 getDexcomReadings();
@@ -284,7 +283,7 @@ void LectureDexcom()
             EcranPrintln(T("DexcomIndefini"));
         }
         
-        lastReceptionGlycMillis = millis();
+        persons[0].lastReceptionMillis = millis();
     }
 }
 

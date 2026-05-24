@@ -16,25 +16,15 @@ String librePass = "";
 String libreZone = "";
 bool ServerConnu = false;
 
-// Dexcom configuration
-String dexcomUsername = "";
-String dexcomPassword = "";
-String dexcomRegion = "Non-US"; // Default to "Non-US" region
+Person persons[MAX_PERSONS];
+int activePersonsCount = 0;
 
-// Sensor selection
-SensorType sensorType = SENSOR_LIBRE; // Default to FreeStyle Libre
+// Dexcom configuration
+String dexcomRegion = "Non-US"; // Default to "Non-US" region
 
 //Regions possibles pour LibreLinkUp
 const char *regions[12] = {"General", "", "Europe", " Europe 2", "France", "Germany", "USA", "Canada", "Australia", "Japan ", "Asia Pacific", "UAE"};
 const char *regionsCode[12] = {"", "", "eu", "eu2", "fr", "de", "us", "ca", "au", "jp", "ap", "ae"};
-
-// Timers
-unsigned long lastDemandeGlycMillis = 0;
-unsigned long recurGlycMillis = 120000; // 2 minutes
-unsigned long lastReceptionGlycMillis = 0;
-unsigned long lastGlycOkMillis = 0;
-long AgeGlycemie = 0;
-
 
 // Heure
 int8_t idxFuseau = 2; // Fuseau Horaire
@@ -51,11 +41,6 @@ uint64_t T_On_seconde = 0;
 int16_t glucoseValues[MAX_POINTS]; // Tableau glycemie sur environ 24h
 unsigned long glucoseHeure[MAX_POINTS]; // Heure glycemie sur environ  24h
 int16_t pointCountGly = 0; // Nombre de points de glycémie actuellement stockés
-String Glycemie = "";
-int16_t GlycemieVal=0;
-int8_t TrendArrow = 0; // 0=non défini, -1=Double flèche vers le bas, 1=Flèche vers le bas, 2=Flèche vers le bas à droite, 3=Flèche vers la droite, 4=Flèche vers le haut à droite, 5=Flèche vers le haut, 6=Double flèche vers le haut
-unsigned long lastGlyUnixTime = 0; // Heure de la dernière glycémie reçue en format Unix Time
-int16_t targetLow=70,targetHigh=180; //Seuils zone verte
 GlucoseUnit glucoseUnit = GLUCOSE_UNIT_MGDL;
 GlucoseColor glucoseColor = GLUCOSE_BLANC;
 
@@ -101,34 +86,53 @@ void clearData()
 {
     Serial.println("Clearing all data (glucose, Dexcom cache, LibreView cache)...");
     
-    // Clear glucose arrays
-    for (int i = 0; i < MAX_POINTS; i++) {
-        glucoseValues[i] = 0;
-        glucoseHeure[i] = 0;
-    }
+  for (int i = 0; i < MAX_PERSONS; i++) {
+    persons[i].glucoseMgDl = 0;
+    persons[i].trendArrow = 0;
+    persons[i].lastGlyUnixTime = 0;
+    persons[i].ageSeconds = 0;
+    persons[i].lastReceptionMillis = 0;
+    persons[i].lastOkMillis = 0;
+    // credentials et name conservés
+  }
+
+  // Historique 24h (sera supprimé en étape 4, mais on garde pour l'instant)
+  for (int i = 0; i < MAX_POINTS; i++) {
+    glucoseValues[i] = 0;
+    glucoseHeure[i] = 0;
+  }
+  pointCountGly = 0;
+
+  // Buffers debug
+  LoginJSON = "";
+  GraphJSON = "";
+  ConnectionJSON = "";
+
+  // Clear Dexcom cache
+  clearDexcomCache();
     
-    // Reset glucose variables
-    pointCountGly = 0;
-    Glycemie = "";
-    GlycemieVal = 0;
-    TrendArrow = 0;
-    lastGlyUnixTime = 0;
-    
-    // Clear JSON data
-    LoginJSON = "";
-    GraphJSON = "";
-    ConnectionJSON = "";
-    
-    // Reset timers to force immediate data fetch
-    lastDemandeGlycMillis = 0;
-    lastReceptionGlycMillis = 0;
-    lastGlycOkMillis = 0;
-    AgeGlycemie = 0;
-    
-    // Clear Dexcom cache
-    clearDexcomCache();
-    
-    // Clear LibreView cache
-    clearLibreViewCache();
+  // Clear LibreView cache
+  clearLibreViewCache();
+}
+
+void InitPersons() {
+  for (int i = 0; i < MAX_PERSONS; i++) {
+    persons[i].name = "";
+    persons[i].configured = false;
+    persons[i].sensorType = SENSOR_DEXCOM;  // MVP default
+    persons[i].dexcomUsername = "";
+    persons[i].dexcomPassword = "";
+    persons[i].glucoseMgDl = 0;
+    persons[i].trendArrow = 0;
+    persons[i].lastGlyUnixTime = 0;
+    persons[i].ageSeconds = 0;
+    persons[i].lastDemandeMillis = 0;
+    persons[i].lastReceptionMillis = 0;
+    persons[i].lastOkMillis = 0;
+    persons[i].recurMillis = 120000;        // 2 min initial (legacy)
+    persons[i].targetLow = 70;              // sentinel values, overwritten by config
+    persons[i].targetHigh = 180;
+  }
+  activePersonsCount = 0;
 }
     

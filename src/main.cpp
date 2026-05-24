@@ -78,6 +78,7 @@ void setup()
   }
 
   LireSerial();
+  InitPersons();
   InitStock(); // Init LittleFS
   if (psramInit())
   {
@@ -123,11 +124,11 @@ void setup()
   LireSerial();
 
   //======== Demande compte LibreLinkUp ou Dexcom si non défini =====================
-  if (sensorType == SENSOR_LIBRE && libreEmail.length() < 4)
+  if (persons[0].sensorType == SENSOR_LIBRE && libreEmail.length() < 4)
   {
     QuestionConfiguration(T("SetLibreLinkUp"), CompteSetup);
   }
-  else if (sensorType == SENSOR_DEXCOM && dexcomUsername.length() < 4)
+  else if (persons[0].sensorType == SENSOR_DEXCOM && persons[0].dexcomUsername.length() < 4)
   {
     QuestionConfiguration(T("SetDexcom"), CompteSetup);
   }
@@ -148,11 +149,11 @@ void loop()
   if (HeureValide)
   {
     // Call appropriate sensor reading function based on sensor type
-    if (sensorType == SENSOR_LIBRE)
+    if (persons[0].sensorType == SENSOR_LIBRE)
     {
       LectureGlycemie();
     }
-    else if (sensorType == SENSOR_DEXCOM)
+    else if (persons[0].sensorType == SENSOR_DEXCOM)
     {
       LectureDexcom();
     }
@@ -161,16 +162,16 @@ void loop()
   loopEcran();
 
   //== Tests si fonctionnement nominal ============
-  if (millis() - lastGlycOkMillis > 1210000) // Si on n'a pas réussi à récupérer une glycémie depuis plus de 20 minutes, on redémarre le module pour tenter de résoudre les problèmes de communication
+  if (millis() - persons[0].lastOkMillis > 1210000) // Si on n'a pas réussi à récupérer une glycémie depuis plus de 20 minutes, on redémarre le module pour tenter de résoudre les problèmes de communication
     AlertePasdeGlycemie();
 
-  if (HeureValide && lastGlyUnixTime > 0)
+  if (HeureValide && persons[0].lastGlyUnixTime > 0)
   {
 
     time_t now;
     time(&now);
-    AgeGlycemie = (long)now - lastGlyUnixTime;
-    if (AgeGlycemie > 1800 && millis() > 300000)
+    persons[0].ageSeconds = (long)now - persons[0].lastGlyUnixTime;
+    if (persons[0].ageSeconds > 1800 && millis() > 300000)
       AlertePasdeGlycemie(); // Pas de nouvelle mesure depuis 30mn. Exemple changement de capteur
   }
   if (millis() - testWatchdog > 10000)

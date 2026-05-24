@@ -106,13 +106,13 @@ void Init_Server()
             { request->send(200, "application/json", GraphJSON); });
   server.on("/ajaxGlycemie", HTTP_GET, [](AsyncWebServerRequest *request)
             {JsonDocument doc;
-                doc["GlycemieVal"] = GlycemieVal;
+                doc["GlycemieVal"] = persons[0].glucoseMgDl;
                 doc["GlucoseUnitLabel"] = getGlucoseUnitLabel();
-                doc["TrendArrow"] = TrendArrow;
-                doc["lastGlyUnixTime"] = lastGlyUnixTime;
-                doc["targetLow"] = targetLow;
-                doc["targetHigh"] = targetHigh;
-                doc["sensorType"] = (int)sensorType;
+                doc["TrendArrow"] = persons[0].trendArrow;
+                doc["lastGlyUnixTime"] = persons[0].lastGlyUnixTime;
+                doc["targetLow"] = persons[0].targetLow;
+                doc["targetHigh"] = persons[0].targetHigh;
+                doc["sensorType"] = (int)persons[0].sensorType;
                 String Json;
                 serializeJson(doc, Json);
                 request->send(200, "application/json", Json); });

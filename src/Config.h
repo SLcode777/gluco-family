@@ -9,6 +9,38 @@ enum SensorType {
     SENSOR_DEXCOM = 1
 };
 
+#define MAX_PERSONS 3
+
+struct Person {
+  String name;
+  bool configured;
+
+  SensorType sensorType;
+
+  String dexcomUsername;
+  String dexcomPassword;
+
+// Last measurement
+  int16_t glucoseMgDl;               // 0 = no measurement
+  int8_t trendArrow;                 // 0 = unknown
+  unsigned long lastGlyUnixTime;     // unix timestamp
+  long ageSeconds; 
+
+  // poll timers (milliseconds)
+  unsigned long lastDemandeMillis;
+  unsigned long lastReceptionMillis;
+  unsigned long lastOkMillis;
+  unsigned long recurMillis;         // adaptative poll intervalle
+
+  // glycemic targets
+  int16_t targetLow;
+  int16_t targetHigh;
+
+};
+
+extern Person persons[MAX_PERSONS];
+extern int activePersonsCount;       // # of configured persons
+
 enum GlucoseUnit {
     GLUCOSE_UNIT_MGDL = 0,
     GLUCOSE_UNIT_MMOLL = 1
@@ -39,33 +71,22 @@ extern String libreZone;
 extern bool ServerConnu;
 
 // Dexcom configuration
-extern String dexcomUsername;
-extern String dexcomPassword;
 extern String dexcomRegion;
-
-// Sensor selection
-extern SensorType sensorType;
 
 extern const char *regions[12];
 extern const char *regionsCode[12];
 
-extern unsigned long lastDemandeGlycMillis, recurGlycMillis, lastReceptionGlycMillis, lastGlycOkMillis;
 extern int8_t idxFuseau; // Fuseau Horaire
 extern int8_t Jour;      //-1=inconnu,0=dimanche,1=lundi...
 extern bool HeureValide;
 extern int16_t Int_Heure, Int_Minute;
 extern String DATE, HEURE, DateAMJ, Hmn;
-extern long AgeGlycemie;
 extern uint64_t T_On_seconde;
 
 #define MAX_POINTS 300
 extern int16_t glucoseValues[];
 extern unsigned long glucoseHeure[];
 extern int16_t pointCountGly;
-extern String Glycemie;
-extern int8_t TrendArrow;
-extern unsigned long lastGlyUnixTime;
-extern int16_t GlycemieVal, targetLow,targetHigh;
 extern GlucoseUnit glucoseUnit;
 extern GlucoseColor glucoseColor;
 
@@ -85,6 +106,9 @@ extern EXT_RAM_BSS_ATTR String LoginJSON, GraphJSON, ConnectionJSON;
 
 // Clear all data (glucose, Dexcom cache, LibreView cache) when switching accounts
 void clearData();
+
+// Initialize persons
+void InitPersons();
 
 String formatGlucoseValue(int16_t mgdl);
 String getGlucoseUnitLabel();

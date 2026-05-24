@@ -28,8 +28,8 @@ void AccueiLoop()
     uint16_t CouleursFond[] = {C_bleuFonce, C_vertFonce, C_orangeFonce, C_rougeFonce};
     int16_t glucoseInfoColor =  RGB565_WHITE;
     int seuilCoul[] = {0, 70, 180, 300, 400};
-    seuilCoul[1] = targetLow;
-    seuilCoul[2] = targetHigh;
+    seuilCoul[1] = persons[0].targetLow;
+    seuilCoul[2] = persons[0].targetHigh;
     if (glucoseUnit == 1)
     { // mmol/L
         seuilCoul[3] = 16 * 18;
@@ -44,11 +44,11 @@ void AccueiLoop()
     if (HeureValide)
         PrintDroite(CanvaAccueil, Hmn, -1, EcranH / 9, 1);
     // Affiche Glycemie
-    if (Glycemie == "")
+    if (persons[0].glucoseMgDl == 0)
     {
         CanvaAccueil->setFont(u8g2_font_helvB18_tf);
-        bool hasCredentials = (sensorType == SENSOR_LIBRE && libreEmail.length() >= 4) ||
-                              (sensorType == SENSOR_DEXCOM && dexcomUsername.length() >= 4);
+        bool hasCredentials = (persons[0].sensorType == SENSOR_LIBRE && libreEmail.length() >= 4) ||
+                              (persons[0].sensorType == SENSOR_DEXCOM && persons[0].dexcomUsername.length() >= 4);
         if (ssid.length() == 0 || !hasCredentials)
         {
             PrintCentre(CanvaAccueil, T("ConfNul"), W2, C + 25, 1);
@@ -60,11 +60,11 @@ void AccueiLoop()
     }
     else
     {
-        bool tooOld = AgeGlycemie / 60 > 20;
+        bool tooOld = persons[0].ageSeconds / 60 > 20;
         if (glucoseColor == GLUCOSE_COULEUR){ //Prefere valeur glycémie en couleur
             for (int c = 0; c < 4; c++)
             {
-                if (GlycemieVal > seuilCoul[c])
+                if (persons[0].glucoseMgDl > seuilCoul[c])
                     idxCoul = c;
             }
             glucoseInfoColor = Couleurs[idxCoul];
@@ -91,12 +91,12 @@ void AccueiLoop()
         
         CanvaAccueil->setTextColor(glucoseInfoColor);
         CanvaAccueil->setFont(u8g2_font_inb63_mn);
-        PrintCentre(CanvaAccueil, formatGlucoseValue(GlycemieVal), W2, C + 25, 1);
+        PrintCentre(CanvaAccueil, formatGlucoseValue(persons[0].glucoseMgDl), W2, C + 25, 1);
 
         CanvaAccueil->setFont(u8g2_font_10x20_tf);
         PrintGauche(CanvaAccueil, getGlucoseUnitLabel(), W2 + R0, C + 20, 1);
         glucoseInfoColor = tooOld ? RGB565(50, 50, 50) : RGB565_WHITE;
-        Teta0 = -180 + 18 * GlycemieVal / 40;
+        Teta0 = -180 + 18 * persons[0].glucoseMgDl / 40;
         if (Teta0 > 0)
             Teta0 = 0;
         if (Teta0 < -180)
@@ -110,7 +110,7 @@ void AccueiLoop()
         int16_t Y0 = EcranH / 6;
         int16_t x0, y0, x1, y1, x2, y2, x3, y3, x4, y4;
         int16_t offset = 40;
-        switch (TrendArrow)
+        switch (persons[0].trendArrow)
         {
         case -1: // DoubleDown
             x0 = -20;
@@ -209,14 +209,14 @@ void AccueiLoop()
     // Ecrit durée depuis la dernière glycémie
     CanvaAccueil->setFont(u8g2_font_helvB18_tf);
     CanvaAccueil->setTextColor(RGB565_WHITE);
-    if (HeureValide && lastGlyUnixTime > 0)
+    if (HeureValide && persons[0].lastGlyUnixTime > 0)
     {
 
         time_t now;
         time(&now);
-        AgeGlycemie = (long)now - lastGlyUnixTime;
-        int minutes = AgeGlycemie / 60;
-        int secondes = AgeGlycemie % 60;
+        persons[0].ageSeconds = (long)now - persons[0].lastGlyUnixTime;
+        int minutes = persons[0].ageSeconds / 60;
+        int secondes = persons[0].ageSeconds % 60;
         char buffer[10];
         sprintf(buffer, "%d:%02d", minutes, secondes);
 
@@ -235,14 +235,14 @@ void AccueiLoop()
     // Trace Avancement demande glycémie
     float dT = 0.0;
 
-    if (lastReceptionGlycMillis <= lastDemandeGlycMillis)
+    if (persons[0].lastReceptionMillis <= persons[0].lastDemandeMillis)
     { // ON a appelé pas encore de réponse
-        dtReponse = float((millis() - lastDemandeGlycMillis)) * float(EcranW) / float(recurGlycMillis);
+        dtReponse = float((millis() - persons[0].lastDemandeMillis)) * float(EcranW) / float(persons[0].recurMillis);
     }
     else
     { // L réponse est arrivée, on affiche le temps écoulé depuis la dernière glycémie et le temps restant pour la prochaine
-        dtReponse = float((lastReceptionGlycMillis - lastDemandeGlycMillis)) * float(EcranW) / float(recurGlycMillis);
-        dT = float((millis() - lastReceptionGlycMillis)) * (float(EcranW) - dtReponse) / float(recurGlycMillis);
+        dtReponse = float((persons[0].lastReceptionMillis - persons[0].lastDemandeMillis)) * float(EcranW) / float(persons[0].recurMillis);
+        dT = float((millis() - persons[0].lastReceptionMillis)) * (float(EcranW) - dtReponse) / float(persons[0].recurMillis);
         if (dT > (float(EcranW + 10) - dtReponse)) // Pas normal on dépasse la récurrence, on affiche un rectangle rouge
         {
             CanvaAccueil->fillRect(0, EcranH - 10, EcranW, 10, RGB565_RED);
@@ -322,10 +322,10 @@ void Trace_Gauge(Arduino_Canvas *canva)
     int R0 = EcranH / 3.5;
     int R1 = EcranH / 2 - 20;
     int Teta0 = -180;
-    int Teta1 = Teta0 + 180 * targetLow / 400;
+    int Teta1 = Teta0 + 180 * persons[0].targetLow / 400;
     canva->fillArc(W2, C, R0, R1, Teta0, Teta1, RGB565_BLUE);
     Teta0 = Teta1;
-    Teta1 = -180 + 180 * targetHigh / 400;
+    Teta1 = -180 + 180 * persons[0].targetHigh / 400;
     canva->fillArc(W2, C, R0, R1, Teta0, Teta1, RGB565_GREEN);
     Teta0 = Teta1;
     Teta1 = -180 + 180 * 300 / 400;

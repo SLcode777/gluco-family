@@ -78,13 +78,15 @@ void DeserializeConfiguration(String json) {
   LaLangue=conf["LaLangue"] | LaLangue;
   
   // Dexcom configuration
-  dexcomUsername = conf["dexcomUsername"].as<String>();
-  dexcomPassword = conf["dexcomPassword"].as<String>();
+  persons[0].dexcomUsername = conf["dexcomUsername"].as<String>();
+  persons[0].dexcomPassword = conf["dexcomPassword"].as<String>();
   dexcomRegion = conf["dexcomRegion"] | dexcomRegion;
   
   // Sensor type
-  int sensorTypeInt = conf["sensorType"] | SENSOR_LIBRE;
-  sensorType = (SensorType) sensorTypeInt;
+  int sensorTypeInt = conf["sensorType"] | SENSOR_DEXCOM;
+  persons[0].sensorType = (SensorType) sensorTypeInt;
+  persons[0].configured = (persons[0].dexcomUsername.length() > 0);
+  activePersonsCount = persons[0].configured ? 1 : 0;
 
   int glucoseUnitInt = conf["glucoseUnit"] | GLUCOSE_UNIT_MGDL;
   glucoseUnit = (GlucoseUnit)glucoseUnitInt;
@@ -109,12 +111,12 @@ String SerializeConfiguration() {
   conf["LaLangue"]=LaLangue;
   
   // Dexcom configuration
-  conf["dexcomUsername"] = dexcomUsername;
-  conf["dexcomPassword"] = dexcomPassword;
+  conf["dexcomUsername"] = persons[0].dexcomUsername;
+  conf["dexcomPassword"] = persons[0].dexcomPassword;
   conf["dexcomRegion"] = dexcomRegion;
   
   // Sensor type
-  conf["sensorType"] = (int) sensorType;
+  conf["sensorType"] = (int) persons[0].sensorType;
   conf["glucoseUnit"] = (int) glucoseUnit;
   //Couleur affichage glycémie
   conf["glucoseColor"] = (int) glucoseColor;

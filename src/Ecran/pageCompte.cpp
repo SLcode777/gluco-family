@@ -35,20 +35,20 @@ void CompteSetup()
     
     // FreeStyle button (left)
     int buttonWidth = (EcranW - 21) / 2;  // 21 = 7 + 7 + 7 (margins and spacing)
-    uint16_t libreColor = (sensorType == SENSOR_LIBRE) ? RGB565_GREEN : RGB565_NAVY;
+    uint16_t libreColor = (persons[0].sensorType == SENSOR_LIBRE) ? RGB565_GREEN : RGB565_NAVY;
     CanvaBase->fillRoundRect(7, 35, buttonWidth, 35, 8, libreColor);
     CanvaBase->drawRoundRect(7, 35, buttonWidth, 35, 8, RGB565_WHITE);
     CanvaBase->setFont(u8g2_font_helvB14_tf);
     PrintCentre(CanvaBase, "FreeStyle", 7 + buttonWidth / 2, 55, 1);
     
     // Dexcom button (right)
-    uint16_t dexcomColor = (sensorType == SENSOR_DEXCOM) ? RGB565_GREEN : RGB565_NAVY;
+    uint16_t dexcomColor = (persons[0].sensorType == SENSOR_DEXCOM) ? RGB565_GREEN : RGB565_NAVY;
     CanvaBase->fillRoundRect(14 + buttonWidth, 35, buttonWidth, 35, 8, dexcomColor);
     CanvaBase->drawRoundRect(14 + buttonWidth, 35, buttonWidth, 35, 8, RGB565_WHITE);
     PrintCentre(CanvaBase, "Dexcom", 14 + buttonWidth + buttonWidth / 2, 55, 1);
     
     // Display appropriate account info based on sensor type
-    if (sensorType == SENSOR_LIBRE)
+    if (persons[0].sensorType == SENSOR_LIBRE)
     {
         PrintCentre(CanvaBase, T("Compte") + " LibreLinkUp", EcranW / 2, 95, 1);
         drawPara("Email", libreEmail, 110, 1);
@@ -70,8 +70,8 @@ void CompteSetup()
     else // SENSOR_DEXCOM
     {
         PrintCentre(CanvaBase, T("Compte") + " Dexcom Share", EcranW / 2, 95, 1);
-        drawPara(T("Username"), dexcomUsername, 110, 1);
-        drawPara(T("Password"), dexcomPassword, 170, 2);
+        drawPara(T("Username"), persons[0].dexcomUsername, 110, 1);
+        drawPara(T("Password"), persons[0].dexcomPassword, 170, 2);
         
         // Region selection with radio buttons (centered)
         CanvaBase->setFont(u8g2_font_helvB14_tf);
@@ -156,8 +156,8 @@ void handleTouch_Compte(uint16_t touchX, uint16_t touchY)
         // FreeStyle Libre button (left)
         if (touchX >= 7 && touchX <= 7 + buttonWidth)
         {
-            if (sensorType != SENSOR_LIBRE) {
-                sensorType = SENSOR_LIBRE;
+            if (persons[0].sensorType != SENSOR_LIBRE) {
+                persons[0].sensorType = SENSOR_LIBRE;
                 
                 // Clear all cached data when switching accounts
                 clearData();
@@ -171,8 +171,8 @@ void handleTouch_Compte(uint16_t touchX, uint16_t touchY)
         // Dexcom button (right)
         if (touchX >= 14 + buttonWidth && touchX <= EcranW - 7)
         {
-            if (sensorType != SENSOR_DEXCOM) {
-                sensorType = SENSOR_DEXCOM;
+            if (persons[0].sensorType != SENSOR_DEXCOM) {
+                persons[0].sensorType = SENSOR_DEXCOM;
                 
                 // Clear all cached data when switching accounts
                 clearData();
@@ -186,7 +186,7 @@ void handleTouch_Compte(uint16_t touchX, uint16_t touchY)
 
     if (Bouton_Appui(Boutons[1], touchX, touchY)) // Email/Username
     {
-        if (sensorType == SENSOR_LIBRE)
+        if (persons[0].sensorType == SENSOR_LIBRE)
         {
             PageActu = pageClavier_CompteEmail;
         }
@@ -198,7 +198,7 @@ void handleTouch_Compte(uint16_t touchX, uint16_t touchY)
     }
     else if (Bouton_Appui(Boutons[2], touchX, touchY)) // Password
     {
-        if (sensorType == SENSOR_LIBRE)
+        if (persons[0].sensorType == SENSOR_LIBRE)
         {
             PageActu = pageClavier_ComptePwd;
         }
@@ -208,7 +208,7 @@ void handleTouch_Compte(uint16_t touchX, uint16_t touchY)
         }
         setup_clavier();
     }
-    else if (sensorType == SENSOR_DEXCOM && touchY >= 230 && touchY <= 280)
+    else if (persons[0].sensorType == SENSOR_DEXCOM && touchY >= 230 && touchY <= 280)
     {
         // Handle Dexcom region radio buttons (check this BEFORE Bouton_Appui)
         // Calculate positions to match display (same calculation as in CompteLoop)
@@ -252,7 +252,7 @@ void handleTouch_Compte(uint16_t touchX, uint16_t touchY)
     }
     else if (Bouton_Appui(Boutons[3], touchX, touchY)) // Zone serveur (LibreView only)
     {
-        if (sensorType == SENSOR_LIBRE)
+        if (persons[0].sensorType == SENSOR_LIBRE)
         {
             pageLibreServeurSetup();
         }
@@ -262,7 +262,7 @@ void handleTouch_Compte(uint16_t touchX, uint16_t touchY)
         CanvaBase->fillRect(0, 225, EcranW, 62, C_grisFonce);
         bool loginSuccess = false;
         
-        if (sensorType == SENSOR_LIBRE)
+        if (persons[0].sensorType == SENSOR_LIBRE)
         {
             loginSuccess = loginLibreLinkUp();
         }

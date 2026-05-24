@@ -189,7 +189,7 @@ void handleTouch_clavier(int tx, int ty)
           {
             libreEmail = textBuffer;
             RecordFichierParametres();
-            lastDemandeGlycMillis = 0; // Reset timer to trigger immediate glucose fetch
+            persons[0].lastDemandeMillis = 0; // Reset timer to trigger immediate glucose fetch
             CompteSetup();
             return;
           }
@@ -197,23 +197,23 @@ void handleTouch_clavier(int tx, int ty)
           {
             librePass = textBuffer;
             RecordFichierParametres();
-            lastDemandeGlycMillis = 0; // Reset timer to trigger immediate glucose fetch
+            persons[0].lastDemandeMillis = 0; // Reset timer to trigger immediate glucose fetch
             CompteSetup();
             return;
           }
           if (PageActu == pageClavier_DexcomUsername)
           {
-            dexcomUsername = textBuffer;
+            persons[0].dexcomUsername = textBuffer;
             RecordFichierParametres();
-            lastDemandeGlycMillis = 0; // Reset timer to trigger immediate glucose fetch
+            persons[0].lastDemandeMillis = 0; // Reset timer to trigger immediate glucose fetch
             CompteSetup();
             return;
           }
           if (PageActu == pageClavier_DexcomPwd)
           {
-            dexcomPassword = textBuffer;
+            persons[0].dexcomPassword = textBuffer;
             RecordFichierParametres();
-            lastDemandeGlycMillis = 0; // Reset timer to trigger immediate glucose fetch
+            persons[0].lastDemandeMillis = 0; // Reset timer to trigger immediate glucose fetch
             CompteSetup();
             return;
           }
@@ -272,12 +272,12 @@ void setup_clavier()
   if (PageActu == pageClavier_DexcomUsername)
   {
     Titre = T("UsernameDexcom");
-    textBuffer = dexcomUsername;
+    textBuffer = persons[0].dexcomUsername;
   }
   if (PageActu == pageClavier_DexcomPwd)
   {
     Titre = T("PasseDexcom");
-    textBuffer = dexcomPassword;
+    textBuffer = persons[0].dexcomPassword;
   }
 
   CanvaBase->setTextColor(RGB565_BLACK);
