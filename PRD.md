@@ -437,6 +437,7 @@ Une erreur sur une personne **n'affecte pas** les autres.
 - Pages web (`HTML/`) mises à jour : `pageBrute.h` affiche 3 blocs JSON (un par personne), `pageMain.h` affiche les 3 glycémies.
 - mDNS configuré sur `gluco-family.local`.
 - README adapté au nouveau projet, **mentionner explicitement le stockage en clair** des identifiants et les implications.
+- **Supprimer le code de migration v1→v2** dans `Stock.cpp::DeserializeConfiguration()` (la branche `else` du `if (formatVersion >= 2)`). Justification : cette branche n'a de raison d'exister que pour les installations qui upgradent depuis l'amont F1ATB ; toute personne qui télécharge gluco-family à partir de cette étape créera directement un `parametres.json` en format v2 et n'aura jamais besoin du chemin migration. Garder ce code mort polluerait le repo distribué.
 - **Critère de sortie :** projet prêt à partager.
 
 ---

@@ -50,8 +50,6 @@ void RemoveParametres(){
 }
 
 void DeserializeConfiguration(String json) {
-
- 
   Serial.print("Json reçu:");
   Serial.println(json);
   JsonDocument conf;
@@ -62,9 +60,12 @@ void DeserializeConfiguration(String json) {
     Serial.println(error.c_str());
     return;
   }
-  
 
+  // Detect schema version (missing field = legacy v1 with flat dexcom credentials)
+  int formatVersion = conf["format_version"] | 1;
+  Serial.printf("Config format_version: %d\n", formatVersion);
 
+  // -------- Common fields (same in v1 and v2) --------
   ssid = conf["ssid"].as<String>();
   password = conf["password"].as<String>();
   hostname = conf["hostname"] | hostname;
@@ -75,51 +76,95 @@ void DeserializeConfiguration(String json) {
   librePass = conf["librePass"].as<String>();
   libreZone = conf["libreZone"].as<String>();
   LuminositeNuit = conf["LuminositeNuit"] | LuminositeNuit;
-  LaLangue=conf["LaLangue"] | LaLangue;
-  
-  // Dexcom configuration
-  persons[0].dexcomUsername = conf["dexcomUsername"].as<String>();
-  persons[0].dexcomPassword = conf["dexcomPassword"].as<String>();
+  LaLangue = conf["LaLangue"] | LaLangue;
   dexcomRegion = conf["dexcomRegion"] | dexcomRegion;
-  
-  // Sensor type
-  int sensorTypeInt = conf["sensorType"] | SENSOR_DEXCOM;
-  persons[0].sensorType = (SensorType) sensorTypeInt;
-  persons[0].configured = (persons[0].dexcomUsername.length() > 0);
-  activePersonsCount = persons[0].configured ? 1 : 0;
 
   int glucoseUnitInt = conf["glucoseUnit"] | GLUCOSE_UNIT_MGDL;
   glucoseUnit = (GlucoseUnit)glucoseUnitInt;
-
-  // Couleur affichage glycémie
   int glucoseColorInt = conf["glucoseColor"] | GLUCOSE_BLANC;
   glucoseColor = (GlucoseColor)glucoseColorInt;
+
+  // -------- Per-person fields (v1 vs v2) --------
+  if (formatVersion >= 2) {
+    // v2: read from "persons" array
+    JsonArray personsArray = conf["persons"].as<JsonArray>();
+    for (int i = 0; i < MAX_PERSONS; i++) {
+      JsonVariant p = personsArray[i];
+      if (p.isNull()) {
+        // Slot missing in JSON: leave InitPersons defaults
+        continue;
+      }
+      persons[i].name           = p["name"].as<String>();
+      persons[i].configured     = p["configured"] | false;
+      int sensorTypeInt         = p["sensorType"] | SENSOR_DEXCOM;
+      persons[i].sensorType     = (SensorType)sensorTypeInt;
+      persons[i].dexcomUsername = p["dexcomUsername"].as<String>();
+      persons[i].dexcomPassword = p["dexcomPassword"].as<String>();
+    }
+  } else {
+    // v1 legacy: flat fields at root, migrate into persons[0] only
+    Serial.println("Legacy v1 config detected — migrating to v2 format");
+    persons[0].name           = "";
+    persons[0].dexcomUsername = conf["dexcomUsername"].as<String>();
+    persons[0].dexcomPassword = conf["dexcomPassword"].as<String>();
+    int sensorTypeInt         = conf["sensorType"] | SENSOR_DEXCOM;
+    persons[0].sensorType     = (SensorType)sensorTypeInt;
+    persons[0].configured     = (persons[0].dexcomUsername.length() > 0);
+    // persons[1] and [2] keep InitPersons defaults (configured = false)
+  }
+
+  // Recompute activePersonsCount from the loaded data
+  activePersonsCount = 0;
+  for (int i = 0; i < MAX_PERSONS; i++) {
+    if (persons[i].configured) activePersonsCount++;
+  }
+  Serial.printf("Active persons: %d\n", activePersonsCount);
+
+  // If we migrated from v1, immediately rewrite in v2 format so the disk is up-to-date
+  if (formatVersion < 2) {
+    Serial.println("Rewriting parametres.json in v2 format");
+    RecordFichierParametres();
+  }
 }
 
 String SerializeConfiguration() {
   JsonDocument conf;
+
+  // Schema version (used by DeserializeConfiguration to detect old format)
+  conf["format_version"] = 2;
+
+  // wifi + network
   conf["ssid"] = ssid;
   conf["password"] = password;
   conf["hostname"] = hostname;
   conf["MyIP"] = MyIP;
+
+  // UI / locale
   conf["idxFuseau"] = idxFuseau;
   conf["rotation"] = rotation;
+  conf["LuminositeNuit"] = LuminositeNuit;
+  conf["LaLangue"]=LaLangue;
+  conf["glucoseUnit"] = (int) glucoseUnit;
+  conf["glucoseColor"] = (int) glucoseColor;
+
+  // LibreLinkUp config (single multi-patient account - stays global)
   conf["libreEmail"] = libreEmail;
   conf["librePass"] = librePass;
   conf["libreZone"] = libreZone;
-  conf["LuminositeNuit"] = LuminositeNuit;
-  conf["LaLangue"]=LaLangue;
   
   // Dexcom configuration
-  conf["dexcomUsername"] = persons[0].dexcomUsername;
-  conf["dexcomPassword"] = persons[0].dexcomPassword;
   conf["dexcomRegion"] = dexcomRegion;
-  
-  // Sensor type
-  conf["sensorType"] = (int) persons[0].sensorType;
-  conf["glucoseUnit"] = (int) glucoseUnit;
-  //Couleur affichage glycémie
-  conf["glucoseColor"] = (int) glucoseColor;
+
+  // Per person array
+   JsonArray personsArray = conf["persons"].to<JsonArray>();
+  for (int i = 0; i < MAX_PERSONS; i++) {
+    JsonObject p = personsArray.add<JsonObject>();
+    p["name"]           = persons[i].name;
+    p["configured"]     = persons[i].configured;
+    p["sensorType"]     = (int)persons[i].sensorType;
+    p["dexcomUsername"] = persons[i].dexcomUsername;
+    p["dexcomPassword"] = persons[i].dexcomPassword;
+  }
   
   String Json;
   serializeJson(conf, Json);
