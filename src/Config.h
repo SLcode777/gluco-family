@@ -111,6 +111,7 @@ void clearData();
 
 // Initialize persons
 void InitPersons();
+bool allConfiguredPersonsSilent(unsigned long timeoutMs);
 
 String formatGlucoseValue(int16_t mgdl);
 String getGlucoseUnitLabel();

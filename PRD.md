@@ -29,6 +29,8 @@ Gluco-Family est l'adaptation de Gluco-Monitor pour ce cas d'usage : **3 glycém
 - **Identification rapide d'une alerte** : repérer immédiatement qui est en hypo/hyper grâce à une couleur ou une flèche.
 - **Suivi de tendance court terme** : la flèche permet d'anticiper "ça monte / ça descend".
 - **Vérification de fraîcheur** : l'âge de la dernière mesure indique si les données sont fiables ou bloquées (capteur déconnecté, téléphone éteint…).
+- **Surveillance même hors domicile** : les données transitent par le cloud Dexcom (alimenté par le téléphone de chaque personne via ses données mobiles), pas par une liaison locale. Le device affiche donc les glycémies même quand les membres sont à l'école / au travail — il suffit que le device ait le WiFi maison et que les téléphones aient du réseau.
+- **Plusieurs écrans dans la maison** : on peut déployer **autant de devices que voulu** (salon, chambre, cuisine…) **sans aucune modification de code**. Chaque device est autonome : il lit la même source (cloud Dexcom) et affiche les mêmes valeurs. Pas de maître/esclave ni de synchro réseau locale — ils sont naturellement "synchronisés" (à quelques minutes près, chacun ayant son propre cycle de poll). Config à refaire sur chaque device (saisie tactile). Pour 2-3 devices, aucun souci de rate-limit Dexcom.
 
 ### Non-objectifs
 - Pas un dispositif médical. Les décisions thérapeutiques restent prises avec les apps officielles.
@@ -440,6 +442,8 @@ Une erreur sur une personne **n'affecte pas** les autres.
 - mDNS configuré sur `gluco-family.local`.
 - README adapté au nouveau projet, **mentionner explicitement le stockage en clair** des identifiants et les implications.
 - **Supprimer le code de migration v1→v2** dans `Stock.cpp::DeserializeConfiguration()` (la branche `else` du `if (formatVersion >= 2)`). Justification : cette branche n'a de raison d'exister que pour les installations qui upgradent depuis l'amont F1ATB ; toute personne qui télécharge gluco-family à partir de cette étape créera directement un `parametres.json` en format v2 et n'aura jamais besoin du chemin migration. Garder ce code mort polluerait le repo distribué.
+- **Reboot conditionnel — version robuste** (amélioration de l'étape 6). L'étape 6 reboote si toutes les personnes configurées sont silencieuses depuis 20 min (basé sur `lastOkMillis` = dernière *valeur* reçue). Problème : ça reboote inutilement pendant une panne de box internet ou une chauffe simultanée des 3 capteurs (cas où le reboot n'aide pas). Version robuste : tracer un `lastCommMillis` mis à jour à chaque réponse HTTP réussie de Dexcom (même sans valeur de glycémie), et ne rebooter que si `WiFi.status()==WL_CONNECTED` ET aucune communication réussie depuis 20 min → cible uniquement le vrai cas "pile réseau ESP32 coincée", seul cas où un reboot répare quelque chose. Ni la chauffe de capteur ni une panne de box ne déclencheraient alors de reboot.
+- **Retouches portrait des pages annexes** : ex. le bouton de `QuestionConfiguration()` (premier boot) codé en 430px de large déborde en portrait ; repositionner ce qui reste de coordonnées paysage en dur.
 - **Critère de sortie :** projet prêt à partager.
 
 ---

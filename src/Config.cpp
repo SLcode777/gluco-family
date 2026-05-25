@@ -128,4 +128,18 @@ void InitPersons() {
   }
   activePersonsCount = 0;
 }
+
+// Returns true only if EVERY configured person has had no successful reading
+// within timeoutMs (the whole acquisition looks stuck). Returns false as soon
+// as one configured person is fresh, or if no person is configured at all.
+bool allConfiguredPersonsSilent(unsigned long timeoutMs) {
+  int configured = 0;
+  int silent = 0;
+  for (int i = 0; i < MAX_PERSONS; i++) {
+    if (!persons[i].configured) continue;
+    configured++;
+    if (millis() - persons[i].lastOkMillis > timeoutMs) silent++;
+  }
+  return (configured > 0) && (silent == configured);
+}
     

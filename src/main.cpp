@@ -156,19 +156,24 @@ void loop()
   }
   loopEcran();
 
-  //== Tests si fonctionnement nominal ============
-  if (millis() - persons[0].lastOkMillis > 1210000) // Si on n'a pas réussi à récupérer une glycémie depuis plus de 20 minutes, on redémarre le module pour tenter de résoudre les problèmes de communication
-    AlertePasdeGlycemie();
-
-  if (HeureValide && persons[0].lastGlyUnixTime > 0)
+//== Update each person's data age (used by display + retry timing) =====
+  if (HeureValide)
   {
-
     time_t now;
     time(&now);
-    persons[0].ageSeconds = (long)now - persons[0].lastGlyUnixTime;
-    if (persons[0].ageSeconds > 1800 && millis() > 300000)
-      AlertePasdeGlycemie(); // Pas de nouvelle mesure depuis 30mn. Exemple changement de capteur
+    for (int i = 0; i < MAX_PERSONS; i++)
+    {
+      if (persons[i].lastGlyUnixTime > 0)
+        persons[i].ageSeconds = (long)now - persons[i].lastGlyUnixTime;
+    }
   }
+
+  //== Reboot ONLY if the whole acquisition is stuck =====================
+  // A single sensor in warmup / being changed must not trigger a reboot.
+  // We reboot only when every configured person has had no successful
+  // reading for 20 min — that points to a real network/system problem.
+  if (allConfiguredPersonsSilent(1210000) && millis() > 300000)
+    AlertePasdeGlycemie();
   if (millis() - testWatchdog > 10000)
   {
     testWatchdog = millis();
