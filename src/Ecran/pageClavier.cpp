@@ -10,9 +10,9 @@
 // ==========================
 
 #define KEY_W 44
-#define KEY_H 44
+#define KEY_H 50
 #define KEY_SPACING 3
-#define START_Y 110
+#define START_Y 130
 
 String textBuffer = "";
 
@@ -46,8 +46,8 @@ void Position(int row, int col, int &x, int &y, int &keyWidth, int &keyHeight);
 
 void drawTextBox()
 {
-  CanvaBase->fillRect(20, 50, 440, 40, RGB565_LIGHTGREY);
-  CanvaBase->drawRect(20, 50, 440, 40, RGB565_BLACK);
+  CanvaBase->fillRect(20, 50, EcranW - 40, 40, RGB565_LIGHTGREY);
+  CanvaBase->drawRect(20, 50, EcranW - 40, 40, RGB565_BLACK);
   CanvaBase->setFont(u8g2_font_helvB14_tf);
   CanvaBase->setTextSize(1);
   CanvaBase->setTextColor(RGB565_BLACK);
@@ -237,15 +237,21 @@ void handleTouch_clavier(int tx, int ty)
 // ==========================
 void Position(int row, int col, int &x, int &y, int &keyWidth, int &keyHeight)
 {
-  keyWidth = KEY_W;
+  const int margin = 4;
   keyHeight = KEY_H;
-  if (row == 3) // Dernière ligne plus large
-  {
-    keyWidth += 31;
+
+  if (row < 3) {
+    // First 3 rows: 10 keys spread across the full width
+    keyWidth = (EcranW - 2 * margin - 9 * KEY_SPACING) / 10;
+  } else {
+    // Last row: 6 wider keys (SHIFT, SPACE, DEL, 123/ABC, Cancel, OK)
+    keyWidth = (EcranW - 2 * margin - 5 * KEY_SPACING) / 6;
   }
-  x = col * (keyWidth + KEY_SPACING) + 6;
-  y = row * (keyHeight + KEY_SPACING) + START_Y;
+
+  x = margin + col * (keyWidth + KEY_SPACING);
+  y = row * (KEY_H + KEY_SPACING) + START_Y;
 }
+
 // ==========================
 // SETUP
 // ==========================
