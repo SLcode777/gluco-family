@@ -168,6 +168,7 @@ void loopEcran()
           case pageClavier_ComptePwd:
           case pageClavier_DexcomUsername:
           case pageClavier_DexcomPwd:
+          case pageClavier_PersonName:
             handleTouch_clavier(touchX, touchY);
             break;
           case pageCompte:
@@ -257,6 +258,9 @@ void loopEcran()
         loop_touch_clavier();
         break;
       case pageClavier_ComptePwd:
+        loop_touch_clavier();
+        break;
+      case pageClavier_PersonName:
         loop_touch_clavier();
         break;
       case pageAutBrute:

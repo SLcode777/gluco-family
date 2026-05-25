@@ -45,6 +45,7 @@ struct Person {
 
 extern Person persons[MAX_PERSONS];
 extern int activePersonsCount;       // # of configured persons
+extern int configPersonIndex;   // 0..2 : person currently being edited in config pages
 
 enum GlucoseUnit {
     GLUCOSE_UNIT_MGDL = 0,

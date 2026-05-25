@@ -37,7 +37,7 @@ inline const char *LangIT = R"====(
   "Serveur80":"Server web attivo sulla porta 80",
   "Update":"Aggiornamento",
   "UpdateComplete":"Aggiornamento completato",
-  "ParaConfig":"Impostazioni di configurazione",
+  "ParaConfig":"Impostazioni",
   "Historique":"Storico",
   "Luminosite":"Luminosità schermo notturno",
   "Rotation":"Rotazione schermo",
@@ -95,6 +95,8 @@ inline const char *LangIT = R"====(
   "UsernameDexcom":"Nome utente Dexcom Share",
   "PasseDexcom":"Password Dexcom Share",
   "Username":"Nome utente",
+  "Person":"Persona",
+  "FirstName":"Nome",
   "Region":"Regione",
   "DexcomIndefini":"Account Dexcom non definito"
 }

@@ -11,16 +11,17 @@
 #include "Dexcom.h"
 
 static Bouton Boutons[5] = {
-    {15, 40, 150, 30, "Sensor Type"},
+    {15, 40, 110, 30, "Modifier"},
     {15, 288, 110, 30, "Modifier"},
     {15, 288, 110, 30, "Modifier"},
     {15, 288, 110, 30, "Modifier"},
-    {165, 288, 200, 30, "Tester"}};
+    {85, 288, 150, 35, "Tester"}};
 void drawPara(String Titre, String Valeur, int H0, int index);
 
 void CompteSetup()
 {
     PageActu = pageCompte;
+    Boutons[0].Texte=T("Modifier");
     Boutons[1].Texte=T("Modifier");
     Boutons[2].Texte=T("Modifier");
     Boutons[3].Texte=T("Modifier");
@@ -28,31 +29,41 @@ void CompteSetup()
     CanvaBase->setFont(u8g2_font_helvB18_tf);
     CanvaBase->setTextColor(RGB565_WHITE);
     CanvaBase->fillScreen(C_grisFonce);
-    
-    // Sensor type selector at top - two buttons side by side
+
+    // Person being edited — centered title at the very top
+    String personLabel = (persons[configPersonIndex].name.length() > 0)
+                             ? persons[configPersonIndex].name
+                             : String("Personne ") + String(configPersonIndex + 1);
+    CanvaBase->setFont(u8g2_font_helvB18_tf);
+    CanvaBase->setTextColor(RGB565_WHITE);
+    PrintCentre(CanvaBase, personLabel, EcranW / 2, 20, 1);
+
+    // First name field at the top
+    drawPara(T("FirstName"), persons[configPersonIndex].name, 32, 0);
+
+    // Sensor type selector - two buttons side by side
     CanvaBase->setFont(u8g2_font_helvB14_tf);
-    PrintCentre(CanvaBase, T("SensorType"), EcranW / 2, 25, 1);
-    
+
     // FreeStyle button (left)
     int buttonWidth = (EcranW - 21) / 2;  // 21 = 7 + 7 + 7 (margins and spacing)
-    uint16_t libreColor = (persons[0].sensorType == SENSOR_LIBRE) ? RGB565_GREEN : RGB565_NAVY;
-    CanvaBase->fillRoundRect(7, 35, buttonWidth, 35, 8, libreColor);
-    CanvaBase->drawRoundRect(7, 35, buttonWidth, 35, 8, RGB565_WHITE);
+    uint16_t libreColor = (persons[configPersonIndex].sensorType == SENSOR_LIBRE) ? RGB565_GREEN : RGB565_NAVY;
+    CanvaBase->fillRoundRect(7, 98, buttonWidth, 38, 8, libreColor);
+    CanvaBase->drawRoundRect(7, 98, buttonWidth, 38, 8, RGB565_WHITE);
     CanvaBase->setFont(u8g2_font_helvB14_tf);
-    PrintCentre(CanvaBase, "FreeStyle", 7 + buttonWidth / 2, 55, 1);
-    
+    PrintCentre(CanvaBase, "FreeStyle", 7 + buttonWidth / 2, 122, 1);
+
     // Dexcom button (right)
-    uint16_t dexcomColor = (persons[0].sensorType == SENSOR_DEXCOM) ? RGB565_GREEN : RGB565_NAVY;
-    CanvaBase->fillRoundRect(14 + buttonWidth, 35, buttonWidth, 35, 8, dexcomColor);
-    CanvaBase->drawRoundRect(14 + buttonWidth, 35, buttonWidth, 35, 8, RGB565_WHITE);
-    PrintCentre(CanvaBase, "Dexcom", 14 + buttonWidth + buttonWidth / 2, 55, 1);
+    uint16_t dexcomColor = (persons[configPersonIndex].sensorType == SENSOR_DEXCOM) ? RGB565_GREEN : RGB565_NAVY;
+    CanvaBase->fillRoundRect(14 + buttonWidth, 98, buttonWidth, 38, 8, dexcomColor);
+    CanvaBase->drawRoundRect(14 + buttonWidth, 98, buttonWidth, 38, 8, RGB565_WHITE);
+    PrintCentre(CanvaBase, "Dexcom", 14 + buttonWidth + buttonWidth / 2, 122, 1);
     
     // Display appropriate account info based on sensor type
-    if (persons[0].sensorType == SENSOR_LIBRE)
+    if (persons[configPersonIndex].sensorType == SENSOR_LIBRE)
     {
-        PrintCentre(CanvaBase, T("Compte") + " LibreLinkUp", EcranW / 2, 95, 1);
-        drawPara("Email", libreEmail, 110, 1);
-        drawPara(T("Password"), librePass, 170, 2);
+        PrintCentre(CanvaBase, T("Compte") + " LibreLinkUp", EcranW / 2, 152, 1);
+        drawPara("Email", libreEmail, 160, 1);
+        drawPara(T("Password"), librePass, 226, 2);
         String zoneAffichee = T("Undefined");
         for (int i = 0; i < 12; i++)
         {
@@ -65,23 +76,23 @@ void CompteSetup()
                 }
             }
         }
-        drawPara(T("ServerZone"), zoneAffichee, 230, 3);
+        drawPara(T("ServerZone"), zoneAffichee, 292, 3);
     }
     else // SENSOR_DEXCOM
     {
-        PrintCentre(CanvaBase, T("Compte") + " Dexcom Share", EcranW / 2, 95, 1);
-        drawPara(T("Username"), persons[0].dexcomUsername, 110, 1);
-        drawPara(T("Password"), persons[0].dexcomPassword, 170, 2);
-        
+        PrintCentre(CanvaBase, T("Compte") + " Dexcom Share", EcranW / 2, 152, 1);
+        drawPara(T("Username"), persons[configPersonIndex].dexcomUsername, 160, 1);
+        drawPara(T("Password"), persons[configPersonIndex].dexcomPassword, 226, 2);
+
         // Region selection with radio buttons (centered)
         CanvaBase->setFont(u8g2_font_helvB14_tf);
-        CanvaBase->fillRoundRect(7, 230, EcranW - 14, 50, 8, RGB565_NAVY);
-        CanvaBase->drawRoundRect(7, 230, EcranW - 14, 50, 8, RGB565_WHITE);
-        PrintCentre(CanvaBase, T("Region"), EcranW2, 250, 1);
-        
+        CanvaBase->fillRoundRect(7, 292, EcranW - 14, 58, 8, RGB565_NAVY);
+        CanvaBase->drawRoundRect(7, 292, EcranW - 14, 58, 8, RGB565_WHITE);
+        PrintCentre(CanvaBase, T("Region"), EcranW2, 312, 1);
+
         // Calculate positions to center the entire group
         // Approximate text widths: "Non-US" ~60px, "US" ~25px, "JP" ~25px
-        int radioY = 265;
+        int radioY = 332;
         int radioR = 8;
         int textOffset = 15; // Space between radio and text
         
@@ -129,35 +140,52 @@ void CompteSetup()
         CanvaBase->print("JP");
     }
 
+    // Test button (centered, below the fields)
+    Boutons[4].X0 = (EcranW - 150) / 2;
+    Boutons[4].Y0 = 362;
     Bouton_Trace(Boutons[4]); // Tester
     CanvaBase->flush();
 }
 void drawPara(String Titre, String Valeur, int H0, int index)
 {
-    CanvaBase->setFont(u8g2_font_helvB14_tf);
-    CanvaBase->fillRoundRect(7, H0, EcranW - 14, 50, 8, RGB565_NAVY);
-    CanvaBase->drawRoundRect(7, H0, EcranW - 14, 50, 8, RGB565_WHITE);
+    const int boxH = 58;
+    CanvaBase->fillRoundRect(7, H0, EcranW - 14, boxH, 8, RGB565_NAVY);
+    CanvaBase->drawRoundRect(7, H0, EcranW - 14, boxH, 8, RGB565_WHITE);
 
-    PrintCentre(CanvaBase,  Titre , EcranW2, H0 + 20, 1);
-    CanvaBase->setFont(u8g2_font_10x20_mf );
-    PrintGauche(CanvaBase, Valeur, 10, H0 + 40, 1);
-    Boutons[index].X0 = EcranW - 122;
-    Boutons[index].Y0 = H0 + 10;
+    // Title: top-left (left-aligned so it never collides with the right-side button)
+    CanvaBase->setFont(u8g2_font_helvB14_tf);
+    CanvaBase->setTextColor(RGB565_WHITE);
+    PrintGauche(CanvaBase, Titre, 12, H0 + 20, 1);
+    // Value: below the title, larger font
+    CanvaBase->setFont(u8g2_font_10x20_mf);
+    PrintGauche(CanvaBase, Valeur, 12, H0 + 48, 1);
+    // Edit button: top-right corner of the box
+    Boutons[index].X0 = EcranW - 98;
+    Boutons[index].Y0 = H0 + 14;
+    Boutons[index].W = 86;
+    Boutons[index].H = 30;
     Bouton_Trace(Boutons[index]);
 }
 
 void handleTouch_Compte(uint16_t touchX, uint16_t touchY)
 {
+    if (Bouton_Appui(Boutons[0], touchX, touchY)) // First name
+    {
+        PageActu = pageClavier_PersonName;
+        setup_clavier();
+        return;
+    }
+
     // Sensor type selection - two buttons
-    if (touchY >= 35 && touchY <= 70)
+    if (touchY >= 98 && touchY <= 136)
     {
         int buttonWidth = (EcranW - 21) / 2;
         
         // FreeStyle Libre button (left)
         if (touchX >= 7 && touchX <= 7 + buttonWidth)
         {
-            if (persons[0].sensorType != SENSOR_LIBRE) {
-                persons[0].sensorType = SENSOR_LIBRE;
+            if (persons[configPersonIndex].sensorType != SENSOR_LIBRE) {
+                persons[configPersonIndex].sensorType = SENSOR_LIBRE;
                 
                 // Clear all cached data when switching accounts
                 clearData();
@@ -171,8 +199,8 @@ void handleTouch_Compte(uint16_t touchX, uint16_t touchY)
         // Dexcom button (right)
         if (touchX >= 14 + buttonWidth && touchX <= EcranW - 7)
         {
-            if (persons[0].sensorType != SENSOR_DEXCOM) {
-                persons[0].sensorType = SENSOR_DEXCOM;
+            if (persons[configPersonIndex].sensorType != SENSOR_DEXCOM) {
+                persons[configPersonIndex].sensorType = SENSOR_DEXCOM;
                 
                 // Clear all cached data when switching accounts
                 clearData();
@@ -186,7 +214,7 @@ void handleTouch_Compte(uint16_t touchX, uint16_t touchY)
 
     if (Bouton_Appui(Boutons[1], touchX, touchY)) // Email/Username
     {
-        if (persons[0].sensorType == SENSOR_LIBRE)
+        if (persons[configPersonIndex].sensorType == SENSOR_LIBRE)
         {
             PageActu = pageClavier_CompteEmail;
         }
@@ -198,7 +226,7 @@ void handleTouch_Compte(uint16_t touchX, uint16_t touchY)
     }
     else if (Bouton_Appui(Boutons[2], touchX, touchY)) // Password
     {
-        if (persons[0].sensorType == SENSOR_LIBRE)
+        if (persons[configPersonIndex].sensorType == SENSOR_LIBRE)
         {
             PageActu = pageClavier_ComptePwd;
         }
@@ -208,7 +236,7 @@ void handleTouch_Compte(uint16_t touchX, uint16_t touchY)
         }
         setup_clavier();
     }
-    else if (persons[0].sensorType == SENSOR_DEXCOM && touchY >= 230 && touchY <= 280)
+    else if (persons[configPersonIndex].sensorType == SENSOR_DEXCOM && touchY >= 292 && touchY <= 350)
     {
         // Handle Dexcom region radio buttons (check this BEFORE Bouton_Appui)
         // Calculate positions to match display (same calculation as in CompteLoop)
@@ -252,39 +280,40 @@ void handleTouch_Compte(uint16_t touchX, uint16_t touchY)
     }
     else if (Bouton_Appui(Boutons[3], touchX, touchY)) // Zone serveur (LibreView only)
     {
-        if (persons[0].sensorType == SENSOR_LIBRE)
+        if (persons[configPersonIndex].sensorType == SENSOR_LIBRE)
         {
             pageLibreServeurSetup();
         }
     }
     else if (Bouton_Appui(Boutons[4], touchX, touchY)) // Tester la connexion
     {
-        CanvaBase->fillRect(0, 225, EcranW, 62, C_grisFonce);
+        CanvaBase->fillRect(0, 405, EcranW, 60, C_grisFonce);
+        CanvaBase->setTextColor(RGB565_WHITE);
         bool loginSuccess = false;
-        
-        if (persons[0].sensorType == SENSOR_LIBRE)
+
+        if (persons[configPersonIndex].sensorType == SENSOR_LIBRE)
         {
             loginSuccess = loginLibreLinkUp();
         }
         else
         {
-            loginSuccess = loginDexcomShare(persons[0]);
+            loginSuccess = loginDexcomShare(persons[configPersonIndex]);
         }
-        
+
         if (loginSuccess)
         {
             CanvaBase->setFont(u8g2_font_helvB18_tf);
-            PrintCentre(CanvaBase, T("ConnectOK"), EcranW / 2, 255, 1);
+            PrintCentre(CanvaBase, T("ConnectOK"), EcranW / 2, 432, 1);
         }
         else
         { //Problème
             CanvaBase->setFont(u8g2_font_10x20_tf);
             if (ServerConnu){
-                 PrintCentre(CanvaBase, T("UserUnknown"), EcranW / 2, 255, 1);
+                 PrintCentre(CanvaBase, T("UserUnknown"), EcranW / 2, 432, 1);
             } else {
-                 PrintCentre(CanvaBase, T("ServerNoAccess"), EcranW / 2, 255, 1);
+                 PrintCentre(CanvaBase, T("ServerNoAccess"), EcranW / 2, 432, 1);
             }
-            
+
         }
         CanvaBase->flush();
     }

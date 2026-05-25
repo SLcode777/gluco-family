@@ -18,6 +18,7 @@ bool ServerConnu = false;
 
 Person persons[MAX_PERSONS];
 int activePersonsCount = 0;
+int configPersonIndex = 0;
 
 // Dexcom configuration
 String dexcomRegion = "Non-US"; // Default to "Non-US" region

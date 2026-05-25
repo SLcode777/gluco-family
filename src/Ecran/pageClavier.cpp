@@ -164,7 +164,8 @@ void handleTouch_clavier(int tx, int ty)
             return;
           }
           if (PageActu == pageClavier_CompteEmail || PageActu == pageClavier_ComptePwd ||
-              PageActu == pageClavier_DexcomUsername || PageActu == pageClavier_DexcomPwd)
+              PageActu == pageClavier_DexcomUsername || PageActu == pageClavier_DexcomPwd ||
++              PageActu == pageClavier_PersonName)
           {
             CompteSetup();
       
@@ -189,7 +190,7 @@ void handleTouch_clavier(int tx, int ty)
           {
             libreEmail = textBuffer;
             RecordFichierParametres();
-            persons[0].lastDemandeMillis = 0; // Reset timer to trigger immediate glucose fetch
+            persons[configPersonIndex].lastDemandeMillis = 0; // Reset timer to trigger immediate glucose fetch
             CompteSetup();
             return;
           }
@@ -197,23 +198,30 @@ void handleTouch_clavier(int tx, int ty)
           {
             librePass = textBuffer;
             RecordFichierParametres();
-            persons[0].lastDemandeMillis = 0; // Reset timer to trigger immediate glucose fetch
+            persons[configPersonIndex].lastDemandeMillis = 0; // Reset timer to trigger immediate glucose fetch
             CompteSetup();
             return;
           }
           if (PageActu == pageClavier_DexcomUsername)
           {
-            persons[0].dexcomUsername = textBuffer;
+            persons[configPersonIndex].dexcomUsername = textBuffer;
             RecordFichierParametres();
-            persons[0].lastDemandeMillis = 0; // Reset timer to trigger immediate glucose fetch
+            persons[configPersonIndex].lastDemandeMillis = 0; // Reset timer to trigger immediate glucose fetch
             CompteSetup();
             return;
           }
           if (PageActu == pageClavier_DexcomPwd)
           {
-            persons[0].dexcomPassword = textBuffer;
+            persons[configPersonIndex].dexcomPassword = textBuffer;
             RecordFichierParametres();
-            persons[0].lastDemandeMillis = 0; // Reset timer to trigger immediate glucose fetch
+            persons[configPersonIndex].lastDemandeMillis = 0; // Reset timer to trigger immediate glucose fetch
+            CompteSetup();
+            return;
+          }
+          if (PageActu == pageClavier_PersonName)
+          {
+            persons[configPersonIndex].name = textBuffer;
+            RecordFichierParametres();
             CompteSetup();
             return;
           }
@@ -278,12 +286,17 @@ void setup_clavier()
   if (PageActu == pageClavier_DexcomUsername)
   {
     Titre = T("UsernameDexcom");
-    textBuffer = persons[0].dexcomUsername;
+    textBuffer = persons[configPersonIndex].dexcomUsername;
   }
   if (PageActu == pageClavier_DexcomPwd)
   {
     Titre = T("PasseDexcom");
-    textBuffer = persons[0].dexcomPassword;
+    textBuffer = persons[configPersonIndex].dexcomPassword;
+  }
+  if (PageActu == pageClavier_PersonName)
+  {
+    Titre = T("FirstName");
+    textBuffer = persons[configPersonIndex].name;
   }
 
   CanvaBase->setTextColor(RGB565_BLACK);

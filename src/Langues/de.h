@@ -37,7 +37,7 @@ inline const char *LangDE = R"====(
   "Serveur80":"Webserver läuft auf Port 80",
   "Update":"Aktualisierung",
   "UpdateComplete":"Aktualisierung abgeschlossen",
-  "ParaConfig":"Konfigurationseinstellungen",
+  "ParaConfig":"Instellingen",
   "Historique":"Verlauf",
   "Luminosite":"Bildschirmhelligkeit nachts",
   "Rotation":"Bildschirmdrehung",
@@ -95,6 +95,8 @@ inline const char *LangDE = R"====(
   "UsernameDexcom":"Dexcom Share Benutzername",
   "PasseDexcom":"Dexcom Share Passwort",
   "Username":"Benutzername",
+  "Person":"Person",
+  "FirstName":"Vorname",
   "Region":"Region",
   "DexcomIndefini":"Dexcom-Konto nicht definiert"
 }
