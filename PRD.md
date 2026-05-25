@@ -422,8 +422,10 @@ Une erreur sur une personne **n'affecte pas** les autres.
 ### Étape 5 — Pages de configuration multi-personnes
 - `pageConfiguration.cpp` : ajouter 3 entrées "Personne 1/2/3".
 - `pageCompte.cpp` : prendre un index de personne en paramètre.
-- Pages clavier : adapter pour saisir prénom + credentials par personne.
-- **Critère de sortie :** flux complet de configuration testable sur hardware.
+- Pages clavier : adapter pour saisir **prénom** + credentials par personne. Le prénom saisi alimente `persons[i].name` et s'affiche sur la zone d'accueil (remplace le fallback "Person N").
+- Supprimer le scaffolding temporaire de test (credentials hardcodés dans `main.cpp`), désormais remplacé par la vraie saisie tactile.
+- **Ré-agencement portrait des pages de réglages** : depuis le passage en portrait (320×480), les pages héritées (`pageAffichage`, `pageConfiguration`, `pageCompte`, `pageFuseauH`, `pageInfos`…) ont des boutons positionnés pour le paysage (480px) qui se chevauchent. Repositionner les boutons/radios en fonction de `EcranW`/`EcranH` portrait.
+- **Critère de sortie :** flux complet de configuration testable sur hardware, pages de réglages lisibles en portrait.
 
 ### Étape 6 — Comportements globaux
 - Adapter `AlertePasdeGlycemie()` : ne reboot que si les 3 sont silencieuses.

@@ -45,7 +45,7 @@ static unsigned long LastClickMillis = 0, PeriodeRafraichissement = 0, ClickLong
 
 // Ecran
 int16_t EcranW, EcranH, EcranW2, EcranH2, EcranH_20, EcranH_30;
-int8_t rotation = 1;
+int8_t rotation = 0;
 
 // Prototypes
 bool getTouchPoint(uint16_t &x, uint16_t &y, int16_t &dX, int16_t &dY);
@@ -616,7 +616,6 @@ void QuestionConfiguration(String Question, void (*fonctionSiOK)())
 void TraceEcranAccueil()
 {
   CanvaBase->fillRect(0, 0, EcranW, EcranH, RGB565_BLACK);
-  Trace_Gauge(CanvaBase);
   CanvaBase->setTextColor(RGB565_WHITE);
   CanvaBase->setFont(u8g2_font_fub35_tf);
   PrintCentre(CanvaBase, "Gluco-Monitor", EcranW2, EcranH2 - 10, 1);

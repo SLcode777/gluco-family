@@ -38,9 +38,6 @@ uint64_t T_On_seconde = 0;
 
 
 // Glycémie
-int16_t glucoseValues[MAX_POINTS]; // Tableau glycemie sur environ 24h
-unsigned long glucoseHeure[MAX_POINTS]; // Heure glycemie sur environ  24h
-int16_t pointCountGly = 0; // Nombre de points de glycémie actuellement stockés
 GlucoseUnit glucoseUnit = GLUCOSE_UNIT_MGDL;
 GlucoseColor glucoseColor = GLUCOSE_BLANC;
 
@@ -95,13 +92,6 @@ void clearData()
     persons[i].lastOkMillis = 0;
     // credentials et name conservés
   }
-
-  // Historique 24h (sera supprimé en étape 4, mais on garde pour l'instant)
-  for (int i = 0; i < MAX_POINTS; i++) {
-    glucoseValues[i] = 0;
-    glucoseHeure[i] = 0;
-  }
-  pointCountGly = 0;
 
   // Buffers debug
   LoginJSON = "";

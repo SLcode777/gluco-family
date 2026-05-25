@@ -7,4 +7,3 @@
 
 void AccueilInit();
 void AccueiLoop() ;
-void Trace_Gauge(Arduino_Canvas *canva);

@@ -22,7 +22,6 @@ static bool UserOK = false;
 // const char *baseURL = "https://libreview-proxy.onrender.com/fr";
 
 static String baseURL = ""; // "https://api-fr.libreview.io"; //"https://api-eu2.libreview.io";
-void getGraph();
 
 String getSHA256(String payload);
 
@@ -145,18 +144,6 @@ void getConnection()
 
     const char *timestamp = doc["data"][0]["glucoseItem"]["Timestamp"].as<const char *>();
     persons[0].lastGlyUnixTime = convertToUnix(timestamp);
-    if (pointCountGly >= MAX_POINTS)
-    {
-      for (int i = 1; i < pointCountGly; i++)
-      {
-        glucoseValues[i - 1] = glucoseValues[i];
-        glucoseHeure[i - 1] = glucoseHeure[i];
-      }
-      pointCountGly--;
-    }
-    glucoseValues[pointCountGly] = persons[0].glucoseMgDl;
-    glucoseHeure[pointCountGly] = persons[0].lastGlyUnixTime;
-    pointCountGly++;
     persons[0].lastOkMillis = millis();
   }
   else
@@ -168,103 +155,12 @@ void getConnection()
   https.end();
 }
 
-void getGraph()
-{
-  String S;
-  HTTPClient https;
-  String url = String(baseURL) + "/llu/connections/" + patientId + "/graph"; //"/glucose-graph";
-
-  https.begin(url);
-  https.setTimeout(15000); // HTTPClient en ms
-
-  https.addHeader("Content-Type", "application/json");
-  https.addHeader("Accept", "application/json");
-  // Mes rajouts
-  https.addHeader("User-Agent", "okhttp/4.9.0");
-  https.addHeader("connection", "Keep-Alive");
-  https.addHeader("product", "llu.android");
-  https.addHeader("version", "4.17.0");
-
-  // Header d’authentification
-
-  https.addHeader("Authorization", "Bearer " + AuthToken);
-
-  https.addHeader("Account-Id", SHAuserID);
-
-  int httpCode = https.GET();
-  JsonDocument doc;
-  if (httpCode == HTTP_CODE_OK)
-  {
-    String response = https.getString();
-    Serial.println("Données graph: " + String(response.length()) + " caractères");
-    GraphJSON = response;
-    JsonDocument filter; // Pour réduire taille en RAM
-    filter["data"]["graphData"][0]["ValueInMgPerDl"] = true;
-    filter["data"]["graphData"][0]["Timestamp"] = true;
-    deserializeJson(doc, response, DeserializationOption::Filter(filter));
-  }
-  else
-  {
-    S = HEURE + T("GraphFailed") + String(httpCode);
-    Serial.println(S);
-    EcranPrintln(S, RGB565_ORANGE);
-  }
-
-  https.end();
-
-  // Accès au tableau graphData
-  JsonArray graphData = doc["data"]["graphData"];
-
-  if (graphData.isNull())
-  {
-    Serial.println("graphData introuvable !");
-    return;
-  }
-  int lastGly = 0;
-  unsigned long lastGlyTime = 0;
-  if (pointCountGly > 0)
-  { // On déjà une valeur de glycémie récente à rajouter au graphe
-    lastGly = glucoseValues[pointCountGly - 1];
-    lastGlyTime = glucoseHeure[pointCountGly - 1];
-  }
-
-  pointCountGly = 0;
-  for (JsonObject item : graphData)
-  {
-    int value = item["ValueInMgPerDl"];
-    const char *timestamp = item["Timestamp"];
-    unsigned long unixTime = convertToUnix(timestamp);
-    Serial.println("Glucose: " + formatGlucoseValue(value) + " " + getGlucoseUnitLabel() + ", Timestamp: " + String(timestamp) + ", Unix Time: " + String(unixTime));
-    if (pointCountGly + 1 < MAX_POINTS)
-    {
-      glucoseValues[pointCountGly] = value;
-      glucoseHeure[pointCountGly] = unixTime;
-      pointCountGly++;
-    }
-  }
-  if (lastGlyTime > 0 && (lastGlyTime > glucoseHeure[pointCountGly - 1]))
-  { // On rajoute la dernière valeur connue si elle est plus récente que la dernière du graphe
-    glucoseValues[pointCountGly] = lastGly;
-    glucoseHeure[pointCountGly] = lastGlyTime;
-    pointCountGly++;
-  }
-  Serial.println("===== GRAPH DATA ===== de " + String(graphData.size()) + " points, pointCountGly: " + String(pointCountGly));
-}
-
 void LectureGlycemie()
 {
 
   if (UserOK)
-
   {
-    Serial.println("pointCountGly:" + String(pointCountGly));
-
     getConnection(); // Dernière valeur de glycémie
-    if (pointCountGly < 3)
-    {
-      getGraph(); // Ancienne valeurs de glycémie
-    }
-
     UserOK = false;
   }
   persons[0].recurMillis = RecurrenceGlycemie;

@@ -26,7 +26,6 @@
 // Serveur Web
 static AsyncWebServer server(80);
 
-uint8_t MonBuffer[4 + MAX_POINTS * 6]; // Pour les tableaux de glycemie
 // Prototypes
 void notFound(AsyncWebServerRequest *request);
 void handleDoUpdate(AsyncWebServerRequest *request, const String &filename, size_t index, uint8_t *data, size_t len, bool final);
@@ -116,29 +115,6 @@ void Init_Server()
                 String Json;
                 serializeJson(doc, Json);
                 request->send(200, "application/json", Json); });
-  server.on("/dataGly", HTTP_GET, [](AsyncWebServerRequest *request)
-            {
-                int16_t tailles[2]; //Pour Javascript derrier, il faut un multiple de 4 octets
-                tailles[0]=pointCountGly;
-                memcpy(&MonBuffer[0], tailles,  2*sizeof(int16_t)); //En premier la taille des tableaux
-                memcpy(&MonBuffer[4], glucoseHeure, pointCountGly * sizeof(uint32_t));
-                memcpy(&MonBuffer[4+pointCountGly * sizeof(uint32_t)], glucoseValues, pointCountGly * sizeof(int16_t));
-
-                
-                size_t size =
-                        2*sizeof(int16_t) +
-                        pointCountGly * sizeof(uint32_t) +
-                        pointCountGly * sizeof(int16_t);
-
-                    AsyncWebServerResponse *response =
-                        request->beginResponse(
-                            200,
-                            "application/octet-stream",
-                            (uint8_t*)&MonBuffer,
-                            size
-                        );
-
-                    request->send(response); });
   server.on("/Restart", HTTP_GET, [](AsyncWebServerRequest *request)
             { request->send(200, "text/html", RestartHtml); 
                  delay(1000);

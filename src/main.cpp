@@ -71,11 +71,6 @@ void setup()
   esp_task_wdt_reset();
   delay(1);
   //======= Stockage =============
-  for (int i = 0; i < MAX_POINTS; i++) // Tableau des glycémies sur 24h
-  {
-    glucoseValues[i] = 0;
-    glucoseHeure[i] = 0;
-  }
 
   LireSerial();
   InitPersons();
@@ -92,7 +87,6 @@ void setup()
 
   //========== Anciens paramètres ==============
   ReadFichierParametres();
-
   LireSerial();
   // =========== Ecran =========================
   bool LangueNonDefini=false;

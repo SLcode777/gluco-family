@@ -24,6 +24,7 @@ inline const char *LangDE = R"====(
   "PasReseau":"Kein WLAN-Netzwerk gefunden",
   "reseauxTrouves":" Netzwerke gefunden",
   "WaitGluco":"Warten auf Glukosewert",
+  "PersonEmpty":"Niet geconfigureerd",
   "ConfNul":"Unvollständige Konfiguration",
   "LoginFailed":" Keine Verbindung zu Libreview, HTTP-Code: ",
   "LastGlyco":" Letzter bekannter Glukosewert: ",

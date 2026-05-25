@@ -219,29 +219,6 @@ void getDexcomReadings(Person& person)
             Serial.println("TrendArrow: " + String(person.trendArrow));
             Serial.println("Timestamp: " + String(person.lastGlyUnixTime));
             
-            // Historical arrays kept only for person 0 (to be deleted in étape 4)
-            if (&person == &persons[0]) {
-                pointCountGly = 0;
-                for (int i = readings.size() - 1; i > -1; i--) {
-                    if (pointCountGly >= MAX_POINTS) break;
-                    
-                    int value = readings[i]["Value"];
-                    const char* ts = readings[i]["WT"];
-                    
-                    if (ts != nullptr) {
-                        String tsStr = String(ts);
-                        int startIdx = tsStr.indexOf('(') + 1;
-                        int endIdx = tsStr.indexOf(')');
-                        if (startIdx > 0 && endIdx > startIdx) {
-                            long unixTime = tsStr.substring(startIdx, endIdx - 3).toInt();
-                            glucoseValues[pointCountGly] = value;
-                            glucoseHeure[pointCountGly] = unixTime;
-                            pointCountGly++;
-                        }
-                    }
-                }
-            }
-            Serial.println("Nombre de points Dexcom: " + String(pointCountGly));
             person.lastOkMillis = millis();
         } else {
             EcranPrintln(HEURE + T("GlucoFailed") + " (no data)", RGB565_ORANGE);

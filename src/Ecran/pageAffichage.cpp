@@ -73,10 +73,10 @@ void handleTouch_Affichage(uint16_t touchX, uint16_t touchY)
                 LuminositeNuit = 255;
                 break;
             case 4:
-                rotation = 1;
+                rotation = 0;
                 break;
             case 5:
-                rotation = 3;
+                rotation = 2;
                 break;
             case 6:
                 glucoseColor = GLUCOSE_BLANC;
@@ -115,7 +115,7 @@ void DrawBoutons()
             RadioBouton_Trace(Rboutons[i]);
         }
     }
-    int16_t rot[2] = {1, 3};
+    int16_t rot[2] = {0, 2};
     for (int i = 4; i < 6; i++)
     {
         Rboutons[i].X0 = EcranW * (i * 2 -7) / 4-20;

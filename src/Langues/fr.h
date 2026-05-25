@@ -24,6 +24,7 @@ inline const char *LangFR = R"====(
   "PasReseau":"Pas de réseau WiFi trouvé",
   "reseauxTrouves":" réseaux trouvés",
   "WaitGluco":"Attente glycémie",
+  "PersonEmpty":"Non configuré",
   "ConfNul":"Configuration incomplète",
   "LoginFailed":" Pas de connexion à Libreview, HTTP code : ",
   "LastGlyco":" Dernière Glycémie connue : ",

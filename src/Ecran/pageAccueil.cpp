@@ -5,336 +5,194 @@
 #include "time.h"
 #include "Langues/Langue.h"
 
-static bool flipCouleurs = false;
-static float dtReponse = 0.0;
+// Layout constants
+#define ZONE_COUNT       MAX_PERSONS
+#define GAUGE_WIDTH_PX   5
+#define GAUGE_MARGIN_PX  3   // gap between gauge and right edge
 
-void Trace_Gauge(Arduino_Canvas *canva);
+// Color thresholds (mg/dL) — same as legacy
+static const int16_t HYPER_CRITICAL = 300;
 
-void AccueilInit()
-{
+// ---------- Helpers ----------
+
+// Returns the glucose value's display color based on the person's targets.
+// White if not configured to use colors, otherwise blue/green/orange/red.
+static uint16_t glucoseColorForValue(int16_t mgdl, int16_t targetLow, int16_t targetHigh) {
+    if (glucoseColor != GLUCOSE_COULEUR) return RGB565_WHITE;
+    if (mgdl < targetLow)              return RGB565_BLUE;
+    if (mgdl < targetHigh)             return RGB565_GREEN;
+    if (mgdl < HYPER_CRITICAL)         return RGB565_ORANGE;
+    return RGB565_RED;
 }
 
-void AccueiLoop()
-{
+// Draws the Dexcom trend arrow centered at (cx, cy), scaled by `scale`
+// (1.0 = compact base size). Trend codes:
+//   -1 DoubleDown, 1 SingleDown, 2 FortyFiveDown, 3 Flat,
+//    4 FortyFiveUp, 5 SingleUp, 6 DoubleUp, 0 unknown (no draw)
+static void drawArrow(Arduino_Canvas *canva, int16_t cx, int16_t cy, int8_t trend, uint16_t color, float scale) {
+    if (trend == 0) return; // unknown trend → no arrow
 
-    CanvaAccueil->fillScreen(RGB565_BLACK);
-    CanvaAccueil->setTextColor(RGB565_WHITE);
-    int16_t W2 = EcranW / 2;
-    int16_t C = EcranH / 2;
-    int16_t R0 = EcranH / 3.5;
-    int16_t R1 = EcranH / 2 - 20;
-    int16_t Teta0 = -180;
-    uint16_t Couleurs[] = {RGB565_BLUE, RGB565_GREEN, RGB565_ORANGE, RGB565_RED};
-    uint16_t CouleursFond[] = {C_bleuFonce, C_vertFonce, C_orangeFonce, C_rougeFonce};
-    int16_t glucoseInfoColor =  RGB565_WHITE;
-    int seuilCoul[] = {0, 70, 180, 300, 400};
-    seuilCoul[1] = persons[0].targetLow;
-    seuilCoul[2] = persons[0].targetHigh;
-    if (glucoseUnit == 1)
-    { // mmol/L
-        seuilCoul[3] = 16 * 18;
-        seuilCoul[4] = 22 * 18;
-    }
-    int idxCoul = 0;
-    Trace_Gauge(CanvaAccueil);
+    // Base coordinates relative to (cx, cy), multiplied by `scale` before drawing
+    int16_t x0, y0, x1, y1, x2, y2, x3, y3, x4, y4;
+    const int16_t offset = (int16_t)(22 * scale); // spacing between double arrows
 
-    // HEURE
-
-    CanvaAccueil->setFont(u8g2_font_fub35_tf);
-    if (HeureValide)
-        PrintDroite(CanvaAccueil, Hmn, -1, EcranH / 9, 1);
-    // Affiche Glycemie
-    if (persons[0].glucoseMgDl == 0)
-    {
-        CanvaAccueil->setFont(u8g2_font_helvB18_tf);
-        bool hasCredentials = (persons[0].sensorType == SENSOR_LIBRE && libreEmail.length() >= 4) ||
-                              (persons[0].sensorType == SENSOR_DEXCOM && persons[0].dexcomUsername.length() >= 4);
-        if (ssid.length() == 0 || !hasCredentials)
-        {
-            PrintCentre(CanvaAccueil, T("ConfNul"), W2, C + 25, 1);
-        }
-        else
-        {
-            PrintCentre(CanvaAccueil, T("WaitGluco"), W2, C + 25, 1);
-        }
-    }
-    else
-    {
-        bool tooOld = persons[0].ageSeconds / 60 > 20;
-        if (glucoseColor == GLUCOSE_COULEUR){ //Prefere valeur glycémie en couleur
-            for (int c = 0; c < 4; c++)
-            {
-                if (persons[0].glucoseMgDl > seuilCoul[c])
-                    idxCoul = c;
-            }
-            glucoseInfoColor = Couleurs[idxCoul];
-        }
-       
-        glucoseInfoColor = tooOld ? RGB565(50, 50, 50) : glucoseInfoColor; //On force en gris au dela de 20mn
-        
-        if (tooOld)
-        {
-            CanvaAccueil->setFont(u8g2_font_helvB18_tf);
-            // Get text bounds for background rectangle
-            int16_t x1, y1;
-            uint16_t w, h;
-            String text = T("WaitGluco");
-            CanvaAccueil->getTextBounds(utf8ToLatin15(text), 0, 0, &x1, &y1, &w, &h);
-            // Draw black background rectangle
-            int16_t rectX = W2 - w / 2 - 2;
-            int16_t rectY = EcranH / 9 - h - 2;
-            CanvaAccueil->fillRect(rectX, rectY, w + 4, h + 8, RGB565_BLACK);
-            // Draw text
-            CanvaAccueil->setTextColor(RGB565_RED);
-            PrintCentre(CanvaAccueil, text, W2, EcranH / 9, 1);
-        }
-        
-        CanvaAccueil->setTextColor(glucoseInfoColor);
-        CanvaAccueil->setFont(u8g2_font_inb63_mn);
-        PrintCentre(CanvaAccueil, formatGlucoseValue(persons[0].glucoseMgDl), W2, C + 25, 1);
-
-        CanvaAccueil->setFont(u8g2_font_10x20_tf);
-        PrintGauche(CanvaAccueil, getGlucoseUnitLabel(), W2 + R0, C + 20, 1);
-        glucoseInfoColor = tooOld ? RGB565(50, 50, 50) : RGB565_WHITE;
-        Teta0 = -180 + 18 * persons[0].glucoseMgDl / 40;
-        if (Teta0 > 0)
-            Teta0 = 0;
-        if (Teta0 < -180)
-            Teta0 = -180;
-        float T = float(Teta0) * 3.14 / 180.0; // Conversion en radians
-        R0 = 0.8 * R0;
-        CanvaAccueil->fillTriangle(W2 + R1 * cos(T), C + R1 * sin(T), W2 + R0 * cos(T - 0.2), C + R0 * sin(T - 0.2), W2 + R0 * cos(T + 0.2), C + R0 * sin(T + 0.2), glucoseInfoColor); // Aiguille
-
-        // Flèche tendance
-        int16_t X0 = EcranW / 6;
-        int16_t Y0 = EcranH / 6;
-        int16_t x0, y0, x1, y1, x2, y2, x3, y3, x4, y4;
-        int16_t offset = 40;
-        switch (persons[0].trendArrow)
-        {
+    switch (trend) {
         case -1: // DoubleDown
-            x0 = -20;
-            y0 = 0;
-            x1 = 0;
-            y1 = 20;
-            x2 = 20;
-            y2 = 0;
-            x3 = -10;
-            y3 = -50;
-            x4 = +10;
-            y4 = -50; // Double flèche vers le bas fort
-            // Draw second arrow for double down
-            CanvaAccueil->fillTriangle(X0 + x0 - offset, Y0 + y0, X0 + x1 - offset, Y0 + y1, X0 + x2 - offset, Y0 + y2, glucoseInfoColor); // Aiguille
-            CanvaAccueil->fillTriangle(X0 + x3 - offset, Y0 + y3, X0 + x1 - offset, Y0 + y1, X0 + x4 - offset, Y0 + y4, glucoseInfoColor);
+        case 1:  // SingleDown
+            x0 = -11; y0 = 0;  x1 = 0;  y1 = 11;  x2 = 11; y2 = 0;
+            x3 = -5;  y3 = -27; x4 = 5; y4 = -27;
             break;
-        case 1:
-            x0 = -20;
-            y0 = 0;
-            x1 = 0;
-            y1 = 20;
-            x2 = 20;
-            y2 = 0;
-            x3 = -10;
-            y3 = -50;
-            x4 = +10;
-            y4 = -50; // Flèche vers le bas fort
+        case 2:  // FortyFiveDown
+            x0 = 0;  y0 = 11; x1 = 11; y1 = 11; x2 = 11; y2 = 0;
+            x3 = -16; y3 = -22; x4 = -22; y4 = -16;
             break;
-        case 2:
-            x0 = 0;
-            y0 = 20;
-            x1 = 20;
-            y1 = 20;
-            x2 = 20;
-            y2 = 0;
-            x3 = -30;
-            y3 = -40;
-            x4 = -40;
-            y4 = -30; // Flèche vers le bas
+        case 3:  // Flat
+            x0 = 0;  y0 = 11; x1 = 11; y1 = 0; x2 = 0; y2 = -11;
+            x3 = -27; y3 = -5; x4 = -27; y4 = 5;
             break;
-        case 3:
-            x0 = 0;
-            y0 = 20;
-            x1 = 20;
-            y1 = 0;
-            x2 = 0;
-            y2 = -20;
-            x3 = -50;
-            y3 = -10;
-            x4 = -50;
-            y4 = +10; // Flèche horizontale
+        case 4:  // FortyFiveUp
+            x0 = 11; y0 = 0;  x1 = 11; y1 = -11; x2 = 0; y2 = -11;
+            x3 = -16; y3 = 22; x4 = -22; y4 = 16;
             break;
-        case 4:
-            x0 = 20;
-            y0 = 0;
-            x1 = 20;
-            y1 = -20;
-            x2 = 0;
-            y2 = -20;
-            x3 = -30;
-            y3 = +40;
-            x4 = -40;
-            y4 = +30; // Flèche vers le haut
+        case 5:  // SingleUp
+        case 6:  // DoubleUp
+            x0 = 11; y0 = 0;  x1 = 0;  y1 = -11; x2 = -11; y2 = 0;
+            x3 = -5;  y3 = 27; x4 = 5;  y4 = 27;
             break;
-        case 5:
-            x0 = 20;
-            y0 = 0;
-            x1 = 0;
-            y1 = -20;
-            x2 = -20;
-            y2 = 0;
-            x3 = -10;
-            y3 = 50;
-            x4 = +10;
-            y4 = 50; // Flèche vers le haut fort
-            break;
-        case 6: // DoubleUp
-            x0 = 20;
-            y0 = 0;
-            x1 = 0;
-            y1 = -20;
-            x2 = -20;
-            y2 = 0;
-            x3 = -10;
-            y3 = 50;
-            x4 = +10;
-            y4 = 50; // Double flèche vers le haut fort
-            // Draw second arrow for double up
-            CanvaAccueil->fillTriangle(X0 + x0 - offset, Y0 + y0, X0 + x1 - offset, Y0 + y1, X0 + x2 - offset, Y0 + y2, glucoseInfoColor); // Aiguille
-            CanvaAccueil->fillTriangle(X0 + x3 - offset, Y0 + y3, X0 + x1 - offset, Y0 + y1, X0 + x4 - offset, Y0 + y4, glucoseInfoColor);
-            break;
-        }
-        CanvaAccueil->fillTriangle(X0 + x0, Y0 + y0, X0 + x1, Y0 + y1, X0 + x2, Y0 + y2, glucoseInfoColor); // Aiguille
-        CanvaAccueil->fillTriangle(X0 + x3, Y0 + y3, X0 + x1, Y0 + y1, X0 + x4, Y0 + y4, glucoseInfoColor);
+        default:
+            return;
     }
-    // Ecrit durée depuis la dernière glycémie
-    CanvaAccueil->setFont(u8g2_font_helvB18_tf);
-    CanvaAccueil->setTextColor(RGB565_WHITE);
-    if (HeureValide && persons[0].lastGlyUnixTime > 0)
-    {
 
+    // Apply scale to all coordinates
+    x0 *= scale; y0 *= scale; x1 *= scale; y1 *= scale; x2 *= scale; y2 *= scale;
+    x3 *= scale; y3 *= scale; x4 *= scale; y4 *= scale;
+
+    canva->fillTriangle(cx + x0, cy + y0, cx + x1, cy + y1, cx + x2, cy + y2, color);
+    canva->fillTriangle(cx + x3, cy + y3, cx + x1, cy + y1, cx + x4, cy + y4, color);
+
+    // Second arrow for DoubleDown / DoubleUp
+    if (trend == -1 || trend == 6) {
+        int16_t dx = -offset;
+        canva->fillTriangle(cx + x0 + dx, cy + y0, cx + x1 + dx, cy + y1, cx + x2 + dx, cy + y2, color);
+        canva->fillTriangle(cx + x3 + dx, cy + y3, cx + x1 + dx, cy + y1, cx + x4 + dx, cy + y4, color);
+    }
+}
+
+// Draws the vertical age gauge on the right edge of the zone.
+// Fill cycle: 0 → 5 min the bar fills (white). After 5 min it stays full
+// and changes color: orange (5-15 min), red (>15 min or no measure).
+static void drawAgeGauge(Arduino_Canvas *canva, int16_t xLeft, int16_t yTop, int16_t yBottom,
+                        long ageSeconds, bool hasMeasure) {
+    const int16_t zoneHeight = yBottom - yTop;
+    const int16_t FILL_PERIOD_S = 300;   // 5 min
+    const int16_t ORANGE_THRESHOLD_S = 300;
+    const int16_t RED_THRESHOLD_S = 900; // 15 min
+
+    int16_t fillHeight;
+    uint16_t color;
+
+    if (!hasMeasure) {
+        // No measure yet → full red gauge
+        fillHeight = zoneHeight;
+        color = RGB565_RED;
+    } else if (ageSeconds < FILL_PERIOD_S) {
+        // Normal cycle: filling, white
+        fillHeight = (int16_t)((long)zoneHeight * ageSeconds / FILL_PERIOD_S);
+        color = RGB565_WHITE;
+    } else if (ageSeconds < RED_THRESHOLD_S) {
+        // Refresh late: full, orange
+        fillHeight = zoneHeight;
+        color = RGB565_ORANGE;
+    } else {
+        // Critical: full, red
+        fillHeight = zoneHeight;
+        color = RGB565_RED;
+    }
+
+    // Draw gauge background (dark grey thin line, full height)
+    canva->fillRect(xLeft, yTop, GAUGE_WIDTH_PX, zoneHeight, C_grisFonce);
+    // Draw filled portion from bottom up
+    if (fillHeight > 0) {
+        canva->fillRect(xLeft, yBottom - fillHeight, GAUGE_WIDTH_PX, fillHeight, color);
+    }
+}
+
+// Draws one person's zone (or empty placeholder if not configured).
+static void drawPersonZone(Arduino_Canvas *canva, int zoneIndex) {
+    const int16_t zoneHeight = EcranH / ZONE_COUNT;
+    const int16_t yTop = zoneIndex * zoneHeight;
+    const int16_t yBottom = yTop + zoneHeight;
+    const int16_t yCenter = yTop + zoneHeight / 2;
+
+    // Separator line (skip for the first zone)
+    if (zoneIndex > 0) {
+        canva->drawFastHLine(0, yTop, EcranW, C_grisFonce);
+    }
+
+    Person& p = persons[zoneIndex];
+    const int16_t gaugeX = EcranW - GAUGE_MARGIN_PX - GAUGE_WIDTH_PX;
+
+    if (!p.configured) {
+        // Empty zone: just the separator and a very subtle placeholder
+        canva->setFont(u8g2_font_helvR10_tf);
+        canva->setTextColor(C_grisMoyen);
+        PrintCentre(canva, T("PersonEmpty"), EcranW / 2, yCenter, 1);
+        return;
+    }
+
+    // ---- Name (top-left, small) ----
+    canva->setFont(u8g2_font_helvB14_tf);
+    canva->setTextColor(RGB565_WHITE);
+    String displayName = (p.name.length() > 0) ? p.name : String("Person ") + String(zoneIndex + 1);
+    PrintGauche(canva, displayName, 6, yTop + 16, 1);
+
+    bool hasMeasure = (p.glucoseMgDl > 0);
+    if (hasMeasure) {
+        // ---- Glucose value: huge, left-aligned, baseline near zone bottom ----
+        uint16_t valueColor = glucoseColorForValue(p.glucoseMgDl, p.targetLow, p.targetHigh);
+        canva->setTextColor(valueColor);
+        canva->setFont(u8g2_font_logisoso92_tn); // big → swap to _logisoso78_tn for smaller
+        PrintGauche(canva, formatGlucoseValue(p.glucoseMgDl), 6, yBottom - 18, 1);
+
+        // ---- Unit label (small, top-right near gauge) ----
+        canva->setFont(u8g2_font_helvR10_tf);
+        canva->setTextColor(RGB565_WHITE);
+        PrintDroite(canva, getGlucoseUnitLabel(), gaugeX - 6, yTop + 16, 1);
+
+        // ---- Arrow (right side, tall, vertically aligned with the value) ----
+        drawArrow(canva, gaugeX - 50, yCenter + 15, p.trendArrow, RGB565_WHITE, 2.0);
+    } else {
+        // No data yet
+        canva->setFont(u8g2_font_helvB18_tf);
+        canva->setTextColor(C_grisMoyen);
+        PrintCentre(canva, T("WaitGluco"), EcranW / 2, yCenter + 8, 1);
+    }
+
+    // ---- Age gauge (right edge) ----
+    drawAgeGauge(canva, gaugeX, yTop + 2, yBottom - 2, p.ageSeconds, hasMeasure);
+}
+
+// ---------- Page lifecycle ----------
+
+void AccueilInit() {
+    // Nothing to init for now
+}
+
+void AccueiLoop() {
+    CanvaAccueil->fillScreen(RGB565_BLACK);
+
+    // Update per-person age in seconds (used by gauge and color logic)
+    if (HeureValide) {
         time_t now;
         time(&now);
-        persons[0].ageSeconds = (long)now - persons[0].lastGlyUnixTime;
-        int minutes = persons[0].ageSeconds / 60;
-        int secondes = persons[0].ageSeconds % 60;
-        char buffer[10];
-        sprintf(buffer, "%d:%02d", minutes, secondes);
-
-        if (minutes >= 10)
-            CanvaAccueil->setTextColor(RGB565_ORANGE);
-        if (minutes >= 15)
-            CanvaAccueil->setTextColor(RGB565_RED);
-        PrintDroite(CanvaAccueil, String(buffer), EcranW, EcranH / 3, 1);
-    }
-    else
-    {
-        CanvaAccueil->setTextColor(RGB565_GREY);
-        PrintDroite(CanvaAccueil, T("Age"), EcranW, EcranH / 3, 1);
-    }
-    CanvaAccueil->setTextColor(RGB565_WHITE);
-    // Trace Avancement demande glycémie
-    float dT = 0.0;
-
-    if (persons[0].lastReceptionMillis <= persons[0].lastDemandeMillis)
-    { // ON a appelé pas encore de réponse
-        dtReponse = float((millis() - persons[0].lastDemandeMillis)) * float(EcranW) / float(persons[0].recurMillis);
-    }
-    else
-    { // L réponse est arrivée, on affiche le temps écoulé depuis la dernière glycémie et le temps restant pour la prochaine
-        dtReponse = float((persons[0].lastReceptionMillis - persons[0].lastDemandeMillis)) * float(EcranW) / float(persons[0].recurMillis);
-        dT = float((millis() - persons[0].lastReceptionMillis)) * (float(EcranW) - dtReponse) / float(persons[0].recurMillis);
-        if (dT > (float(EcranW + 10) - dtReponse)) // Pas normal on dépasse la récurrence, on affiche un rectangle rouge
-        {
-            CanvaAccueil->fillRect(0, EcranH - 10, EcranW, 10, RGB565_RED);
-        }
-        else
-        {
-            CanvaAccueil->fillRect(dtReponse, EcranH - 10, dT, 10, C_grisMoyen);
-        }
-    }
-    if (dtReponse > float(EcranW + EcranW2)) // Pas normal, on dépasse largement la récurrence, on affiche un rectangle rouge
-    {
-        dtReponse = float(EcranW + 20);
-    }
-    CanvaAccueil->fillRect(0, EcranH - 10, int(dtReponse), 10, RGB565_MAGENTA);
-
-    // Trace courbe glycemie
-    if (pointCountGly > 1)
-    {
-        int16_t X0 = 30;
-        int16_t Y0 = EcranH / 1.9;
-        int16_t W = EcranW - X0;
-        int16_t H = EcranH * 0.37;
-        int16_t EcranH10 = EcranH - 10;
-        int16_t x, y, last_x;
-        int lastHeure = -1;
-        unsigned long Tmin = 0, Tmax = 0;
-        Tmin = glucoseHeure[0];
-        Tmax = glucoseHeure[pointCountGly - 1];
-        last_x = X0;
-        float DT = float(W) / (float(Tmax - Tmin));
-        CanvaAccueil->setFont(u8g2_font_6x10_tf);
-
-        for (int c = 0; c < 4; c++) // Trace fond graphique
-        {
-            int16_t y2 = EcranH10 - H * seuilCoul[c] / 400;
-            y = EcranH10 - H * seuilCoul[c + 1] / 400;
-            String Seuil = String(seuilCoul[c + 1]);
-            if (glucoseUnit == 1)
-            { // mmol/L
-                Seuil = String(float(seuilCoul[c + 1]) / 18.0f, 1);
-            }
-            PrintDroite(CanvaAccueil, Seuil, X0, y, 1);
-            CanvaAccueil->fillRect(X0, y, W, y2 - y, CouleursFond[c]);
-        }
-        for (int i = 0; i < pointCountGly; i++)
-        {
-            x = X0 + int(DT * float(glucoseHeure[i] - Tmin));
-            y = H * glucoseValues[i] / 400;
-            for (int c = 0; c < 4; c++)
-            {
-                if (glucoseValues[i] > seuilCoul[c])
-                    idxCoul = c;
-            }
-            CanvaAccueil->fillRect(last_x, EcranH10 - y, x - last_x, y, Couleurs[idxCoul]);
-            last_x = x;
-            int heure = unixToHeure(glucoseHeure[i]);
-            if (heure != lastHeure)
-            {
-                if (heure >= 0 && lastHeure >= 0)
-                {
-                    CanvaAccueil->drawFastVLine(x, EcranH10, 10, RGB565_WHITE);
-                    // Allow label to be drawn even at the edge (changed from x < W to x <= W + X0)
-                    if (x <= W + X0)
-                        PrintGauche(CanvaAccueil, String(heure), x, EcranH - 5, 1);
-                }
-                lastHeure = heure;
+        for (int i = 0; i < MAX_PERSONS; i++) {
+            if (persons[i].lastGlyUnixTime > 0) {
+                persons[i].ageSeconds = (long)now - persons[i].lastGlyUnixTime;
             }
         }
-        CanvaAccueil->drawFastVLine(X0, EcranH10 - H, H, RGB565_WHITE); // Axe vertical
     }
-}
 
-void Trace_Gauge(Arduino_Canvas *canva)
-{
-    int W2 = EcranW / 2;
-    int C = EcranH / 2;
-    int R0 = EcranH / 3.5;
-    int R1 = EcranH / 2 - 20;
-    int Teta0 = -180;
-    int Teta1 = Teta0 + 180 * persons[0].targetLow / 400;
-    canva->fillArc(W2, C, R0, R1, Teta0, Teta1, RGB565_BLUE);
-    Teta0 = Teta1;
-    Teta1 = -180 + 180 * persons[0].targetHigh / 400;
-    canva->fillArc(W2, C, R0, R1, Teta0, Teta1, RGB565_GREEN);
-    Teta0 = Teta1;
-    Teta1 = -180 + 180 * 300 / 400;
-    if (glucoseUnit == 1)
-    { // mmol/L
-        Teta1 = -180 + 180 * 16 * 18 / 400;
+    for (int i = 0; i < ZONE_COUNT; i++) {
+        drawPersonZone(CanvaAccueil, i);
     }
-    canva->fillArc(W2, C, R0, R1, Teta0, Teta1, RGB565_ORANGE);
-    Teta0 = Teta1;
-    Teta1 = 0;
-    canva->fillArc(W2, C, R0, R1, Teta0, Teta1, RGB565_RED);
 }

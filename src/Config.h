@@ -88,10 +88,6 @@ extern int16_t Int_Heure, Int_Minute;
 extern String DATE, HEURE, DateAMJ, Hmn;
 extern uint64_t T_On_seconde;
 
-#define MAX_POINTS 300
-extern int16_t glucoseValues[];
-extern unsigned long glucoseHeure[];
-extern int16_t pointCountGly;
 extern GlucoseUnit glucoseUnit;
 extern GlucoseColor glucoseColor;
 
