@@ -60,7 +60,7 @@ Gluco-Family est l'adaptation de Gluco-Monitor pour ce cas d'usage : **3 glycém
 
 | # | Évolution future |
 |---|------------------|
-| V1 | Support **mixte** Libre+Dexcom (certaines personnes sur Libre, d'autres Dexcom) |
+| V1 | Support **mixte** Libre+Dexcom (certaines personnes sur Libre, d'autres Dexcom) — *planifié en Étape 8 (§10)* |
 | V2 | Plus de 3 personnes (4, 5…) |
 | V3 | Courbe d'historique 24h |
 | V4 | Jauge graphique en arc (présente dans l'original) |
@@ -446,6 +446,21 @@ Une erreur sur une personne **n'affecte pas** les autres.
 - **Retouches portrait des pages annexes** : ex. le bouton de `QuestionConfiguration()` (premier boot) codé en 430px de large déborde en portrait ; repositionner ce qui reste de coordonnées paysage en dur.
 - **Critère de sortie :** projet prêt à partager.
 
+### Étape 8 — Support multi-capteurs (Dexcom + FreeStyle Libre mixtes)
+
+Objectif : permettre que chaque personne ait **son propre type de capteur**, pour le cas où un membre de la famille passe de Dexcom à FreeStyle Libre (ou inversement). Réalise l'évolution `V1` de §3. S'appuie sur les fondations déjà posées : `Person.sensorType` existe depuis l'Étape 1, et le module `Libreview` a été conservé avec une signature pensée pour être cohérente avec `Dexcom`.
+
+- **Modèle de données** : activer les champs Libre de `struct Person` aujourd'hui en commentaire (`libreEmail`, `librePass`, `libreZone`). Le champ `sensorType` (`SENSOR_DEXCOM` / `SENSOR_LIBRE`) devient réellement discriminant par personne.
+- **Routeur d'acquisition** : introduire un point d'entrée unique `LectureGlycemie(Person&)` qui dispatche vers `LectureDexcom(Person&)` ou `LectureLibre(Person&)` selon `person.sensorType`. La boucle de polling de l'Étape 3 appelle ce routeur, pas directement `LectureDexcom`.
+- **Module Libreview** : refactor `Libreview.cpp` pour prendre `Person&` (auth LibreLinkUp 2-step, session par personne, parsing de la valeur + flèche au même format interne que Dexcom — `glucoseMgDl`, `trendArrow`, `lastGlyUnixTime`). Normaliser les flèches Libre sur la même échelle `trendArrow` que Dexcom.
+- **Régions** : LibreLinkUp a ses **propres zones régionales**, distinctes des bases Dexcom. La région ne peut donc plus être un réglage purement global partagé : prévoir une région Libre (`libreZone`) déterminée par personne (ou par type de capteur), en gardant la région Dexcom globale existante.
+- **Persistance** : le JSON `parametres.json` porte déjà `sensorType` par personne (Étape 2) ; ajouter par personne les champs Libre (`libreEmail`, `libreZone`). Migration : les personnes existantes sans type explicite sont supposées `SENSOR_DEXCOM`.
+- **Pages tactiles** : dans `pageCompte.cpp`, ajouter en tête d'édition un **sélecteur de type de capteur** (Dexcom / Libre) ; les champs credentials affichés s'adaptent au type choisi (identifiants Dexcom vs e-mail LibreLinkUp + zone).
+- **Pages web / debug** : la page `/Brute` affiche le bloc JSON correspondant à la source réelle de chaque personne.
+- **Langues** : ajouter les clés liées au choix de capteur (`SensorType`, `SensorDexcom`, `SensorLibre`, libellés de zones Libre).
+- **Tests** : capturer des fixtures LibreLinkUp (script Python ad hoc, comme pour Dexcom en §9.1) ; tests natifs du routeur et du parsing Libre ; sur hardware, valider un foyer mixte (au moins 1 Dexcom + 1 Libre affichés simultanément).
+- **Critère de sortie :** une famille mixte (Dexcom + Libre) s'affiche correctement sur le même écran, chaque personne pollée via la bonne API, et une erreur sur une source n'affecte pas les autres (NF4 préservé).
+
 ---
 
 ## 11. Décisions arrêtées
@@ -458,6 +473,7 @@ Une erreur sur une personne **n'affecte pas** les autres.
 | D4 | **Stockage des identifiants** | En clair dans `/parametres.json` sur LittleFS, comme dans l'amont. Justification : la flash n'est pas accessible via le réseau ; chiffrer impliquerait une clé à stocker quelque part (problème de l'œuf et la poule), disproportionné pour un objet de domicile. Pratique standard des firmwares ESP32 hobby (Tasmota, ESPHome…). À documenter clairement dans le README. |
 | D5 | **Nom mDNS** du device | `gluco-family.local` |
 | D6 | **Page brute** (`/Brute` web) | ✅ Conservée et adaptée. Affichera les 3 JSON Dexcom côte à côte (un bloc par personne). Le garde-fou "consentement tactile" de 3 min est conservé tel quel (sécurité contre exposition accidentelle des données médicales sur le réseau local). |
+| D7 | **Région Libre par personne** (Étape 8) | ❓ **Question ouverte** — à trancher au moment de l'Étape 8. Aujourd'hui la région est globale (cas Dexcom familial mono-pays). Avec le support Libre mixte, LibreLinkUp a ses propres zones régionales distinctes des bases Dexcom : faut-il une `libreZone` par personne, par type de capteur, ou globale ? Décision différée jusqu'à l'implémentation. |
 
 ---
 
