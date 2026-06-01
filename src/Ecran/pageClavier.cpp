@@ -205,6 +205,7 @@ void handleTouch_clavier(int tx, int ty)
           if (PageActu == pageClavier_DexcomUsername)
           {
             persons[configPersonIndex].dexcomUsername = textBuffer;
+            persons[configPersonIndex].configured = (textBuffer.length() > 0); // Mark person active once it has a username
             RecordFichierParametres();
             persons[configPersonIndex].lastDemandeMillis = 0; // Reset timer to trigger immediate glucose fetch
             CompteSetup();

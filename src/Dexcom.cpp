@@ -22,9 +22,13 @@ bool loginDexcomShare(Person& person)
     
     if (dexcomRegion == "US") {
         dexcomBaseURL = "https://share2.dexcom.com";
+        APP_ID = "d89443d2-327c-4a6f-89e5-496bbb0317db";
     } else if (dexcomRegion == "JP") {
         dexcomBaseURL = "https://share.dexcom.jp";
         APP_ID = "d8665ade-9673-4e27-9ff6-92db4ce13d13";
+    } else { // Non-US (default) — always reset to the right server (dexcomBaseURL is static)
+        dexcomBaseURL = "https://shareous1.dexcom.com";
+        APP_ID = "d89443d2-327c-4a6f-89e5-496bbb0317db";
     }
     Serial.println("Connexion à Dexcom Share: " + dexcomBaseURL);
     
