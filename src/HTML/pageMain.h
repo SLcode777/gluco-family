@@ -7,144 +7,46 @@ const char *MainHtml = R"====(
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        body {
-            background: #111;
-            color: white;
-            font-family: Arial;
-            text-align: center;
-        }
-
-        a {
-            color: white;
-            text-decoration: none;
-        }
-
-        svgGauge {
-            width: 320px;
-        }
-
-        .zone {
-            fill: none;
-            stroke-width: 50;
-        }
-
-        #aiguille {
-            fill: white;
-        }
-
-        #SvgGauge {
-
-            width: 80%;
-        }
-
-        #SvgGraphe {
-            width: 50%;
-        }
-
-        #SvgFlecheTendance {
-            width: 50%;
-        }
-
-        .graduationD {
-            font-size: 14px;
-            fill: white;
-            text-anchor: end;
-        }
-
-        .graduationM {
-            font-size: 14px;
-            fill: white;
-            text-anchor: middle;
-        }
-
-        .graduationG {
-            font-size: 14px;
-            fill: white;
-            text-anchor: start;
-        }
-
-        .flex3c {
-            display: flex;
-        }
-
-        .w50p {
-            width: 50%;
-        }
-
-        .w25p {
-            width: 25%;
-        }
-
-        #lAge {
-            position: relative;
-            top: 50%;
-            font-size: 30px;
-        }
-
-        .MiniMenu {
-            text-align: right;
-            font-size: 30px;
-        }
-        .LeBas{
-            display:flex;
-            justify-content: space-between;
-            color:white;
-            margin-top:10px;
-        }
+        body { background:#111; color:#fff; font-family:Arial; margin:0; }
+        a { color:#fff; text-decoration:none; }
+        .nav { display:flex; gap:8px; justify-content:flex-end; padding:8px 12px; background:#000; font-size:16px; }
+        .nav a { padding:5px 10px; border:1px solid #444; border-radius:6px; }
+        h1.brand { text-align:center; margin:10px 0; font-size:24px; }
+        .zones { max-width:540px; margin:0 auto; }
+        .zone { display:flex; align-items:center; border-top:1px solid #333; min-height:120px; padding:6px 12px; box-sizing:border-box; }
+        .zone:first-child { border-top:none; }
+        .zinfo { flex:1; min-width:0; }
+        .zname { font-size:18px; color:#ccc; }
+        .zval { font-size:64px; font-weight:bold; line-height:1; }
+        .zunit { font-size:16px; color:#aaa; margin-left:8px; }
+        .zempty { font-size:18px; color:#777; font-style:italic; }
+        .zarrow { width:70px; text-align:center; }
+        .zarrow svg { width:60px; height:60px; }
+        .zage { width:10px; height:96px; background:#333; border-radius:4px; overflow:hidden; position:relative; margin-left:10px; }
+        .zagefill { position:absolute; bottom:0; left:0; width:100%; height:0%; background:#fff; transition:height .5s linear; }
+        .LeBas { display:flex; justify-content:space-between; color:#888; margin:16px 12px; font-size:13px; }
     </style>
-    <title>Gluco-Monitor</title>
+    <title>Gluco-Family</title>
     <script src="/JS_Commun"></script>
     <script src="/JS_Main"></script>
     <script src="/JS_Traduction"></script>
 </head>
 
 <body onload="init();">
-    <div class="flex3c">
-        <div id="svgTendance" class="w25p">
-
-        </div>
-        <div class="w50p">
-            <svg viewBox="0 0 300 180" id="SvgGauge">
-
-                <!-- zones couleur -->
-
-                <path id="z1" class="zone" stroke="blue" />
-                <path id="z2" class="zone" stroke="green" />
-                <path id="z3" class="zone" stroke="orange" />
-                <path id="z4" class="zone" stroke="red" />
-
-                <!-- aiguille -->
-
-                <polygon id="aiguille" points="150,150 150,150 150,150" />
-
-                <!-- centre -->
-
-
-
-                <!-- valeur -->
-
-                <text id="valeur" x="150" y="150" font-size="60" text-anchor="middle" fill="white">0</text>
-
-                <text id="unit" x="270" y="165" font-size="15" text-anchor="middle" fill="white">mg/dl</text>
-
-            </svg>
-
-        </div>
-        <div class="w25p">
-            <div class="MiniMenu"><a href="/Brute">...</a></div>
-            <h1>Gluco-Monitor</h1>
-            <div id="lAge"><span style="color:grey" data-i18n="AgeGlyc">-Age-</span></div>
-        </div>
+    <div class="nav">
+        <a href="/Settings" data-i18n="Settings">Settings</a>
+        <a href="/Brute" data-i18n="Historique">Data</a>
+        <a href="/OTA" data-i18n="Update">Update</a>
+        <a href="/Restart" data-i18n="Restart">Restart</a>
     </div>
-    <div id="svgGraphe"></div>
-
+    <h1 class="brand">Gluco-Family</h1>
+    <div class="zones" id="zones"></div>
     <div class="LeBas">
-    <div>Version : <span id="version"></span></div>
-    <div><a href="https://f1atb.fr">https://F1ATB.fr</a></div>
-  </div>
-
-
+        <div>Version : <span id="version"></span></div>
+        <div><a href="https://github.com/SLcode777/gluco-family">github.com/SLcode777/gluco-family</a></div>
+    </div>
 </body>
 
 </html>

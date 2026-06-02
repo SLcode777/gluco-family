@@ -13,6 +13,7 @@
 #include "HTML/pageBrute.h"
 #include "HTML/pageAutorisationBrute.h"
 #include "HTML/pageOTA.h"
+#include "HTML/pageSettings.h"
 #include "HTML/JS_Commun.js.h"
 #include "HTML/JS_Main.js.h"
 #include "Ecran/pageAutBrute.h"
@@ -105,16 +106,107 @@ void Init_Server()
             { request->send(200, "application/json", GraphJSON); });
   server.on("/ajaxGlycemie", HTTP_GET, [](AsyncWebServerRequest *request)
             {JsonDocument doc;
-                doc["GlycemieVal"] = persons[0].glucoseMgDl;
                 doc["GlucoseUnitLabel"] = getGlucoseUnitLabel();
-                doc["TrendArrow"] = persons[0].trendArrow;
-                doc["lastGlyUnixTime"] = persons[0].lastGlyUnixTime;
-                doc["targetLow"] = persons[0].targetLow;
-                doc["targetHigh"] = persons[0].targetHigh;
-                doc["sensorType"] = (int)persons[0].sensorType;
+                JsonArray arr = doc["persons"].to<JsonArray>();
+                for (int i = 0; i < MAX_PERSONS; i++)
+                {
+                    JsonObject p = arr.add<JsonObject>();
+                    p["name"] = persons[i].name;
+                    p["configured"] = persons[i].configured;
+                    p["GlycemieVal"] = persons[i].glucoseMgDl;
+                    p["TrendArrow"] = persons[i].trendArrow;
+                    p["lastGlyUnixTime"] = persons[i].lastGlyUnixTime;
+                    p["targetLow"] = persons[i].targetLow;
+                    p["targetHigh"] = persons[i].targetHigh;
+                    p["sensorType"] = (int)persons[i].sensorType;
+                }
                 String Json;
                 serializeJson(doc, Json);
                 request->send(200, "application/json", Json); });
+  // ===== Settings (gated by the physical "Accept" button, like /Brute) =====
+  server.on("/Settings", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
+                if (AutorisationPageBrute)
+                {
+                    request->send(200, "text/html", SettingsHtml);
+                }
+                else
+                {
+                    PageActu = pageAutBrute;
+                    request->send(200, "text/html", AutBruteHtml);
+                }
+                TimerAutorisationBruteMillis = millis(); });
+  server.on("/api/config", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
+                if (!AutorisationPageBrute)
+                {
+                    request->send(403, "application/json", "{\"error\":\"unauthorized\"}");
+                    return;
+                }
+                JsonDocument doc;
+                doc["dexcomRegion"] = dexcomRegion;
+                doc["libreEmail"] = libreEmail;
+                doc["libreZone"] = libreZone;
+                doc["hasLibrePass"] = (librePass.length() > 0);
+                JsonArray arr = doc["persons"].to<JsonArray>();
+                for (int i = 0; i < MAX_PERSONS; i++)
+                {
+                    JsonObject p = arr.add<JsonObject>();
+                    p["name"] = persons[i].name;
+                    p["sensorType"] = (int)persons[i].sensorType;
+                    p["dexcomUsername"] = persons[i].dexcomUsername;
+                    p["hasDexcomPass"] = (persons[i].dexcomPassword.length() > 0);
+                    p["targetLow"] = persons[i].targetLow;
+                    p["targetHigh"] = persons[i].targetHigh;
+                    p["configured"] = persons[i].configured;
+                }
+                String Json;
+                serializeJson(doc, Json);
+                TimerAutorisationBruteMillis = millis();
+                request->send(200, "application/json", Json); });
+  server.on("/api/settings", HTTP_POST, [](AsyncWebServerRequest *request)
+            {
+                if (!AutorisationPageBrute)
+                {
+                    request->send(403, "application/json", "{\"error\":\"unauthorized\"}");
+                    return;
+                }
+                auto P = [&](const String &n) -> String
+                { return request->hasParam(n, true) ? request->getParam(n, true)->value() : String(); };
+
+                // Global account fields
+                if (request->hasParam("region", true)) dexcomRegion = P("region");
+                if (request->hasParam("lemail", true)) libreEmail = P("lemail");
+                if (request->hasParam("lzone", true)) libreZone = P("lzone");
+                { String lp = P("lpass"); if (lp.length() > 0) librePass = lp; }
+
+                for (int i = 0; i < MAX_PERSONS; i++)
+                {
+                    String s = String(i);
+                    persons[i].name = P("name" + s);
+                    persons[i].sensorType = (SensorType)(P("sensor" + s).toInt());
+                    persons[i].dexcomUsername = P("duser" + s);
+                    String dp = P("dpass" + s);
+                    if (dp.length() > 0) persons[i].dexcomPassword = dp;
+                    if (request->hasParam("low" + s, true)) persons[i].targetLow = P("low" + s).toInt();
+                    if (request->hasParam("high" + s, true)) persons[i].targetHigh = P("high" + s).toInt();
+                    // configured = does the chosen sensor have credentials?
+                    if (persons[i].sensorType == SENSOR_DEXCOM)
+                        persons[i].configured = (persons[i].dexcomUsername.length() > 0);
+                    else
+                        persons[i].configured = (libreEmail.length() > 0);
+                    // force a fresh login on next poll
+                    persons[i].dexcomSessionId = "";
+                    persons[i].dexcomAccountId = "";
+                    persons[i].lastDemandeMillis = 0;
+                }
+                activePersonsCount = 0;
+                for (int i = 0; i < MAX_PERSONS; i++)
+                    if (persons[i].configured) activePersonsCount++;
+
+                RecordFichierParametres();
+                TimerAutorisationBruteMillis = millis();
+                request->send(200, "application/json", "{\"status\":\"ok\"}"); });
   server.on("/Restart", HTTP_GET, [](AsyncWebServerRequest *request)
             { request->send(200, "text/html", RestartHtml); 
                  delay(1000);

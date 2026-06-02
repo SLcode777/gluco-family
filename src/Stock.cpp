@@ -100,6 +100,8 @@ void DeserializeConfiguration(String json) {
       persons[i].sensorType     = (SensorType)sensorTypeInt;
       persons[i].dexcomUsername = p["dexcomUsername"].as<String>();
       persons[i].dexcomPassword = p["dexcomPassword"].as<String>();
+      persons[i].targetLow      = p["targetLow"]  | persons[i].targetLow;
+      persons[i].targetHigh     = p["targetHigh"] | persons[i].targetHigh;
     }
   } else {
     // v1 legacy: flat fields at root, migrate into persons[0] only
@@ -164,6 +166,8 @@ String SerializeConfiguration() {
     p["sensorType"]     = (int)persons[i].sensorType;
     p["dexcomUsername"] = persons[i].dexcomUsername;
     p["dexcomPassword"] = persons[i].dexcomPassword;
+    p["targetLow"]      = persons[i].targetLow;
+    p["targetHigh"]     = persons[i].targetHigh;
   }
   
   String Json;

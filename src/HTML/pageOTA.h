@@ -4,7 +4,7 @@ const char* OTAupdateHtml = R"rawliteral(
 
 <head>
   <meta charset="UTF-8">
-  <title>OTA Update</title>
+  <title>Gluco-Family - Update</title>
   <script src="/JS_Commun"></script>
   <script src="/JS_Traduction"></script>
   <style>
@@ -121,7 +121,7 @@ const char* OTAupdateHtml = R"rawliteral(
 <body onload="init();">
   <div class="top">
     <div class="Menugauche"><img src="/favicon.ico" />
-      <h1>Gluco-Monitor</h1>
+      <h1>Gluco-Family</h1>
     </div>
     <div class="Menudroite">
       <div class="MiniMenu">
@@ -144,7 +144,7 @@ const char* OTAupdateHtml = R"rawliteral(
       -Version dispo-
     </div>
     <div class="liste">
-      <iframe src="https://f1atb.fr/web_tool_GlucoMonit/scan_dir_bin.php" style="width:350px; height:150px"></iframe>
+      <div id="releases">...</div>
     </div>
     <div class="liste">
       <ul>
@@ -164,7 +164,7 @@ const char* OTAupdateHtml = R"rawliteral(
   </div>
   <div class="LeBas">
     <div>Version : <span id="version"></span></div>
-    <div><a href="https://f1atb.fr">https://F1ATB.fr</a></div>
+    <div><a href="https://github.com/SLcode777/gluco-family">github.com/SLcode777/gluco-family</a></div>
   </div>
   <script>
     document.getElementById('form').onsubmit = async e => {
@@ -198,23 +198,55 @@ const char* OTAupdateHtml = R"rawliteral(
       fd.append('firmware', file, file.name);
       xhr.send(fd);
     };
+    const REPO = "SLcode777/gluco-family";
+    function tr(k, f){ return (typeof Traduction !== "undefined" && Traduction[k]) ? Traduction[k] : f; }
     function init(){
-       // Fetch sensor type and update menu label
+       // Update the data tab label (Dexcom vs LibreView) from person 1's sensor type
        fetch('/ajaxGlycemie')
            .then(response => response.json())
            .then(data => {
-               const isDexcom = data.sensorType === 1; // 1 = SENSOR_DEXCOM
-               if (isDexcom) {
+               const p0 = (data.persons && data.persons[0]) ? data.persons[0] : null;
+               if (p0 && p0.sensorType === 1) { // 1 = SENSOR_DEXCOM
                    document.getElementById('menuBrute').setAttribute('data-i18n', 'dataDexcom');
                }
                SetTraduction();
            })
-           .catch(error => {
-               console.error('Error fetching sensor type:', error);
-               SetTraduction();
+           .catch(() => { SetTraduction(); });
+       GH("Version_actu", Version);
+       GH("version", Version);
+       loadReleases();
+    }
+    function loadReleases(){
+       const box = GID("releases");
+       fetch("https://api.github.com/repos/" + REPO + "/releases")
+           .then(r => r.json())
+           .then(list => {
+               if (!Array.isArray(list) || list.length === 0){
+                   box.innerHTML = tr("NoReleases", "No release published yet.") +
+                       ' <a href="https://github.com/' + REPO + '/releases">' + tr("ReleasesPage", "Releases page") + '</a>';
+                   return;
+               }
+               let h = '<ul style="text-align:left">';
+               list.forEach(rel => {
+                   const bins = (rel.assets || []).filter(a => a.name.toLowerCase().endsWith(".bin"));
+                   h += "<li><b>" + rel.tag_name + "</b>";
+                   if (bins.length){
+                       h += "<ul>";
+                       bins.forEach(a => {
+                           h += '<li><a href="' + a.browser_download_url + '">' + a.name + "</a> (" + Math.round(a.size / 1024) + " kB)</li>";
+                       });
+                       h += "</ul>";
+                   } else {
+                       h += ' — <a href="' + rel.html_url + '">' + tr("ReleasesPage", "page") + "</a>";
+                   }
+                   h += "</li>";
+               });
+               h += "</ul>";
+               box.innerHTML = h;
+           })
+           .catch(() => {
+               box.innerHTML = '<a href="https://github.com/' + REPO + '/releases">github.com/' + REPO + '/releases</a>';
            });
-       GH("Version_actu",Version);
-       GH("version",Version);
     }
   </script>
 </body>

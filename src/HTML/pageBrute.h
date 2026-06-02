@@ -105,7 +105,7 @@ const char *BruteHtml = R"====(
 <body onload="Init();">
     <div class="top">
         <div class="Menugauche"><img src="/favicon.ico" />
-            <h1>Gluco-Monitor</h1>
+            <h1>Gluco-Family</h1>
         </div>
         <div class="Menudroite">
             <div class="MiniMenu">
@@ -129,7 +129,7 @@ const char *BruteHtml = R"====(
     <div id="GraphJSON"></div>
     <div class="LeBas">
     <div>Version : <span id="version"></span></div>
-    <div><a href="https://f1atb.fr">https://F1ATB.fr</a></div>
+    <div><a href="https://github.com/SLcode777/gluco-family">github.com/SLcode777/gluco-family</a></div>
   </div>
     <script>
         function createNode(key, value) {

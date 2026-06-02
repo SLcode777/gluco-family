@@ -78,9 +78,9 @@ inline const char *LangDE = R"====(
   "GraphLibreview":"Libreview-Diagramm",
   "GraphDexcom":"Dexcom Share-Diagramm",
   "UpdateOTA":"Software-Update über OTA",
-  "VersionNow":"Ihre aktuelle Gluco-Monitor-Version: ",
+  "VersionNow":"Ihre aktuelle Gluco-Family-Version: ",
   "VersionDispo":"Verfügbare Version(en): ",
-  "Telecharge":"1 - Laden Sie die gewünschte Binärversion des Gluco-Monitors auf Ihren Computer herunter",
+  "Telecharge":"1 - Laden Sie die .bin-Datei der gewünschten Version herunter (Liste oben)",
   "ClickBin":"durch Anklicken",
   "SelectFile":"2 - Klicken Sie auf 'Datei auswählen' und wählen Sie diese Binärdatei auf Ihrem Computer aus",
   "SendBin":"3 - Klicken Sie auf ",
@@ -110,7 +110,15 @@ inline const char *LangDE = R"====(
   "HintLibre":"LibreLinkUp-Zugangsdaten eingeben",
   "SwipeNext":"Links wischen für weiter",
   "ConfigDone":"Einrichtung fertig!",
-  "SwipeSettings":"Links wischen für Einstellungen"
+  "SwipeSettings":"Links wischen für Einstellungen",
+  "Settings":"Einstellungen",
+  "TargetLow":"Zielwert niedrig",
+  "TargetHigh":"Zielwert hoch",
+  "Save":"Speichern",
+  "Saved":"Gespeichert!",
+  "PwdUnchanged":"(leer lassen = unverändert)",
+  "NoReleases":"Noch keine Version veröffentlicht.",
+  "ReleasesPage":"Releases-Seite"
 }
 )====";
 

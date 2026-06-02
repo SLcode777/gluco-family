@@ -78,9 +78,9 @@ inline const char *LangFR = R"====(
   "GraphLibreview":"Graphe de Libreview",
   "GraphDexcom":"Graphe de Dexcom Share",
   "UpdateOTA":"Mise à jour logiciel par OTA",
-  "VersionNow":"Votre version actuelle de Gluco-Monitor : ",
+  "VersionNow":"Votre version actuelle de Gluco-Family : ",
   "VersionDispo":"Version(s) disponible(s) : ",
-  "Telecharge":"1 - Téléchargez sur votre ordinateur, la version binaire du logiciel du Gluco-Monitor souhaitée",
+  "Telecharge":"1 - Téléchargez le fichier .bin de la version souhaitée (liste ci-dessus)",
   "ClickBin":"en cliquant dessus",
   "SelectFile":"2 - Cliquez sur 'Choisir un fichier' et sélectionnez ce binaire sur votre ordinateur",
   "SendBin":"3 - Cliquez sur ",
@@ -110,6 +110,14 @@ inline const char *LangFR = R"====(
   "HintLibre":"Saisissez vos identifiants LibreLinkUp",
   "SwipeNext":"Swipez à gauche pour la suite",
   "ConfigDone":"Configuration terminée !",
-  "SwipeSettings":"Swipez à gauche pour les paramètres"
+  "SwipeSettings":"Swipez à gauche pour les paramètres",
+  "Settings":"Paramètres",
+  "TargetLow":"Cible basse",
+  "TargetHigh":"Cible haute",
+  "Save":"Enregistrer",
+  "Saved":"Enregistré !",
+  "PwdUnchanged":"(laisser vide = inchangé)",
+  "NoReleases":"Aucune version publiée pour l'instant.",
+  "ReleasesPage":"Page des releases"
 }
 )====";

@@ -6,8 +6,8 @@
 
 
 static Bouton Boutons[2] = {
-    {30, 0, 180, 50, "Refuser"},
-    {270, 0, 180, 50, "Accepter"}};
+    {60, 0, 200, 50, "Refuser"},
+    {60, 0, 200, 50, "Accepter"}};
 
 void AutorisationInit()
 {
@@ -20,9 +20,10 @@ void AutorisationInit()
     PrintCentre(CanvaBase, Titre, EcranW / 2, 30, 1);
     CanvaBase->fillRoundRect(7, 50, EcranW - 20, EcranH - 60, 8, RGB565_FIREBRICK);
     CanvaBase->drawRoundRect(7, 50, EcranW - 20, EcranH - 60, 8, RGB565_WHITE);
+    Boutons[0].Y0 = EcranH2 - 35; // Refuser (top)
+    Boutons[1].Y0 = EcranH2 + 35; // Accepter (bottom) — stacked to avoid right overflow
     for (int i = 0; i < 2; i++)
-    {   
-        Boutons[i].Y0=EcranH2;
+    {
         Bouton_Trace(Boutons[i], RGB565_WHITE, CanvaBase);
     }
     CanvaBase->flush();
