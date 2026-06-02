@@ -98,9 +98,10 @@ void setup()
   LireSerial();
   // ===== Definition de la langue si non encore definie ====
   if (LangueNonDefini)
-  {  
-    QuestionConfiguration(T("Lang"), pageLangueSetup);
-    QuestionConfiguration(T("F_Hor"), pageFuseauSetup);
+  {
+    EcranBienvenue(); // First-boot welcome (shown in English, before language is chosen)
+    EtapeAssistant(T("Lang"), T("HintLang"), pageLangueSetup);
+    EtapeAssistant(T("F_Hor"), T("HintTZ"), pageFuseauSetup);
   }
   // ============ Internet / Wifi et Heure ==============
 
@@ -119,20 +120,26 @@ void setup()
   LireSerial();
 
   //======== Demande compte LibreLinkUp ou Dexcom si non défini =====================
+  bool compteAssistant = false;
   if (persons[0].sensorType == SENSOR_LIBRE && libreEmail.length() < 4)
   {
-    QuestionConfiguration(T("SetLibreLinkUp"), CompteSetup);
+    EtapeAssistant(T("LastStep"), T("HintLibre"), CompteSetup);
+    compteAssistant = true;
   }
   else if (persons[0].sensorType == SENSOR_DEXCOM && persons[0].dexcomUsername.length() < 4)
   {
-    QuestionConfiguration(T("SetDexcom"), CompteSetup);
+    EtapeAssistant(T("LastStep"), T("HintDexcom"), CompteSetup);
+    compteAssistant = true;
   }
+  if (compteAssistant)
+    EcranFinConfig(); // Setup finished: confirm and point to the settings menu
 
   esp_task_wdt_reset();
   delay(1);
   Serial.printf("PSRAM: %d\n", psramFound());
   Serial.printf("Free heap: %d\n", ESP.getFreeHeap());
   Serial.printf("Free PSRAM: %d\n", ESP.getFreePsram());
+  PageActu = pageAccueil; // Always land on the home screen after boot/setup
   SetupEnCours=false;
 
 }

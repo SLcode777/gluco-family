@@ -144,6 +144,12 @@ void CompteSetup()
     Boutons[4].X0 = (EcranW - 150) / 2;
     Boutons[4].Y0 = 362;
     Bouton_Trace(Boutons[4]); // Tester
+    if (SetupEnCours)
+    { // First-boot wizard: tell the user how to finish / move on
+        CanvaBase->setFont(u8g2_font_helvB14_tf);
+        CanvaBase->setTextColor(RGB565_WHITE);
+        PrintCentre(CanvaBase, T("SwipeNext"), EcranW / 2, EcranH - 20, 1);
+    }
     CanvaBase->flush();
 }
 void drawPara(String Titre, String Valeur, int H0, int index)

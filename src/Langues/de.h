@@ -98,7 +98,19 @@ inline const char *LangDE = R"====(
   "Person":"Person",
   "FirstName":"Vorname",
   "Region":"Region",
-  "DexcomIndefini":"Dexcom-Konto nicht definiert"
+  "DexcomIndefini":"Dexcom-Konto nicht definiert",
+  "Welcome":"Willkommen!",
+  "WelcomeTap":"Bildschirm tippen zum Starten",
+  "Configure":"Einrichten",
+  "LastStep":"Letzter Schritt",
+  "HintLang":"Sprache und Einheit wählen",
+  "HintTZ":"Zeitzone wählen",
+  "HintWifi":"Mit WLAN verbinden",
+  "HintDexcom":"Dexcom-Share-Zugangsdaten eingeben",
+  "HintLibre":"LibreLinkUp-Zugangsdaten eingeben",
+  "SwipeNext":"Links wischen für weiter",
+  "ConfigDone":"Einrichtung fertig!",
+  "SwipeSettings":"Links wischen für Einstellungen"
 }
 )====";
 

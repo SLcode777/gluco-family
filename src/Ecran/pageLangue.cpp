@@ -37,6 +37,12 @@ void pageLangueSetup()
     PrintCentre(CanvaBase, T("GlucoseUnit"), EcranW / 2, 230, 1);
 
     DrawBoutons_();
+    if (SetupEnCours)
+    { // First-boot wizard: tell the user how to reach the next step
+        CanvaBase->setFont(u8g2_font_helvB14_tf);
+        CanvaBase->setTextColor(RGB565_WHITE);
+        PrintCentre(CanvaBase, T("SwipeNext"), EcranW / 2, EcranH - 20, 1);
+    }
     CanvaBase->flush();
 }
 

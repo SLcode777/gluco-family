@@ -99,6 +99,17 @@ inline const char *LangFR = R"====(
   "FirstName":"Prénom",
   "Region":"Région",
   "DexcomIndefini":"Compte Dexcom non défini",
- 
+  "Welcome":"Bienvenue !",
+  "WelcomeTap":"Touchez l'écran pour démarrer",
+  "Configure":"Configurer",
+  "LastStep":"Dernière étape",
+  "HintLang":"Choisissez la langue et l'unité",
+  "HintTZ":"Choisissez votre fuseau horaire",
+  "HintWifi":"Connectez l'appareil au WiFi",
+  "HintDexcom":"Saisissez vos identifiants Dexcom Share",
+  "HintLibre":"Saisissez vos identifiants LibreLinkUp",
+  "SwipeNext":"Swipez à gauche pour la suite",
+  "ConfigDone":"Configuration terminée !",
+  "SwipeSettings":"Swipez à gauche pour les paramètres"
 }
 )====";

@@ -65,6 +65,9 @@ void PrintCentre(Arduino_Canvas *canva, const String &S, int16_t X, int16_t Y, u
 void PrintGauche(Arduino_Canvas *canva, const String &S, int16_t X, int16_t Y, uint8_t Sz);
 void PrintDroite(Arduino_Canvas *canva, const String &S, int16_t X, int16_t Y, uint8_t Sz);
 void QuestionConfiguration(String Question, void (*fonctionSiOK)());
+void EcranBienvenue();
+void EtapeAssistant(String titre, String hint, void (*fonctionSiOK)());
+void EcranFinConfig();
 void ClearClick();
 String utf8ToLatin15(const String &utf8);
 

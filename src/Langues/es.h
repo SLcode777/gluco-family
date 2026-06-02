@@ -98,6 +98,18 @@ inline const char *LangES = R"====(
   "Person":"Persona",
   "FirstName":"Nombre",
   "Region":"Región",
-  "DexcomIndefini":"Cuenta Dexcom no definida"
+  "DexcomIndefini":"Cuenta Dexcom no definida",
+  "Welcome":"¡Bienvenido!",
+  "WelcomeTap":"Toca la pantalla para empezar",
+  "Configure":"Configurar",
+  "LastStep":"Último paso",
+  "HintLang":"Elige idioma y unidad",
+  "HintTZ":"Elige tu zona horaria",
+  "HintWifi":"Conéctate a tu WiFi",
+  "HintDexcom":"Introduce tu acceso Dexcom Share",
+  "HintLibre":"Introduce tu acceso LibreLinkUp",
+  "SwipeNext":"Desliza a la izquierda para seguir",
+  "ConfigDone":"¡Configuración lista!",
+  "SwipeSettings":"Desliza a la izquierda para ajustes"
 }
 )====";

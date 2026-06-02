@@ -39,7 +39,7 @@ void Init_Internet()
     EcranPrintln("Hostname : " + hostname);
     if (ssid.length() == 0)
     {
-        QuestionConfiguration(T("SelectWifi"), WifiListSetup);
+        EtapeAssistant(T("SelectWifi"), T("HintWifi"), WifiListSetup);
     }
     CanvaBase->fillRect(0, EcranH2, EcranW, EcranH2, RGB565_BLACK);
 

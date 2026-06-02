@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <esp32-hal-ledc.h>
+#include <esp_task_wdt.h>
 #include <Arduino_GFX_Library.h> //Works with Version 1.6.0 and not 1.6.1 (October 2025)
 #include <Wire.h>
 #include <U8g2lib.h>
@@ -617,12 +618,113 @@ void QuestionConfiguration(String Question, void (*fonctionSiOK)())
   TraceEcranAccueil();
   ClearClick();
 }
+
+//=== First-boot welcome screen. Waits indefinitely for any touch (no timeout).
+void EcranBienvenue()
+{
+  uint16_t Tx, Ty;
+  int16_t dX, dY;
+  CanvaBase->fillScreen(RGB565_BLACK);
+  CanvaBase->setTextColor(RGB565_WHITE);
+  CanvaBase->setFont(u8g2_font_fub35_tf);
+  PrintCentre(CanvaBase, "Gluco-Family", EcranW2, EcranH2 - 60, 1);
+  CanvaBase->setFont(u8g2_font_helvB18_tf);
+  PrintCentre(CanvaBase, T("Welcome"), EcranW2, EcranH2 + 30, 1);
+  CanvaBase->setFont(u8g2_font_helvB14_tf);
+  PrintCentre(CanvaBase, T("WelcomeTap"), EcranW2, EcranH2 + 80, 1);
+  CanvaBase->flush();
+  ClearClick();
+  bool notTouched = true;
+  while (notTouched)
+  {
+    if (getTouchPoint(Tx, Ty, dX, dY))
+      notTouched = false;
+    LireSerial();
+    esp_task_wdt_reset();
+    delay(5);
+  }
+  ClearClick();
+}
+
+//=== Guided setup step. Full-screen intro (title + hint + button), then runs the
+//    given setup page and stays in its page family until the user leaves it.
+//    No timeout: the step waits for the user instead of cycling back to the title.
+void EtapeAssistant(String titre, String hint, void (*fonctionSiOK)())
+{
+  uint16_t Tx, Ty;
+  int16_t dX, dY;
+  CanvaBase->fillScreen(C_grisFonce);
+  CanvaBase->setTextColor(RGB565_WHITE);
+  CanvaBase->setFont(u8g2_font_helvB18_tf);
+  PrintCentre(CanvaBase, titre, EcranW2, 90, 1);
+  CanvaBase->setFont(u8g2_font_helvB14_tf);
+  PrintCentre(CanvaBase, hint, EcranW2, EcranH2, 1);
+  Bouton b;
+  b.W = 220;
+  b.H = 60;
+  b.X0 = (EcranW - b.W) / 2;
+  b.Y0 = EcranH - 140;
+  b.Texte = T("Configure");
+  Bouton_Trace(b, RGB565_WHITE, CanvaBase);
+  CanvaBase->flush();
+  ClearClick();
+  bool notClick = true;
+  while (notClick)
+  {
+    if (getTouchPoint(Tx, Ty, dX, dY) && Bouton_Appui(b, Tx, Ty, CanvaBase))
+    {
+      ClearClick();
+      fonctionSiOK();
+      int16_t PageConcerne = PageActu / 10;
+      notClick = false;
+      while (PageActu / 10 == PageConcerne)
+      { // Stay while the user is in the same page family
+        loopEcran();
+        LireSerial();
+        esp_task_wdt_reset();
+        delay(2);
+      }
+    }
+    LireSerial();
+    esp_task_wdt_reset();
+    delay(2);
+  }
+  ClearClick();
+}
+
+//=== Shown once the whole setup is done. Confirms success and tells the user
+//    that the settings menu is reachable by swiping. Auto-dismisses after a
+//    few seconds, or immediately on touch.
+void EcranFinConfig()
+{
+  uint16_t Tx, Ty;
+  int16_t dX, dY;
+  CanvaBase->fillScreen(RGB565_BLACK);
+  CanvaBase->setTextColor(RGB565_WHITE);
+  CanvaBase->setFont(u8g2_font_helvB18_tf);
+  PrintCentre(CanvaBase, T("ConfigDone"), EcranW2, EcranH2 - 20, 1);
+  CanvaBase->setFont(u8g2_font_helvB14_tf);
+  PrintCentre(CanvaBase, T("SwipeSettings"), EcranW2, EcranH2 + 40, 1);
+  CanvaBase->flush();
+  ClearClick();
+  unsigned long T0 = millis();
+  bool notTouched = true;
+  while (notTouched && (millis() - T0 < 6000))
+  {
+    if (getTouchPoint(Tx, Ty, dX, dY))
+      notTouched = false;
+    LireSerial();
+    esp_task_wdt_reset();
+    delay(5);
+  }
+  ClearClick();
+}
 void TraceEcranAccueil()
 {
   CanvaBase->fillRect(0, 0, EcranW, EcranH, RGB565_BLACK);
   CanvaBase->setTextColor(RGB565_WHITE);
   CanvaBase->setFont(u8g2_font_fub35_tf);
-  PrintCentre(CanvaBase, "Gluco-Monitor", EcranW2, EcranH2 - 10, 1);
+  PrintCentre(CanvaBase, "Gluco-Family", EcranW2, EcranH2 - 10, 1);
   CanvaBase->setFont(u8g2_font_helvB18_tf);
   PrintDroite(CanvaBase, T("byF1ATB"), EcranW - 10, EcranH - 30, 1);
   CanvaBase->setFont(u8g2_font_helvB14_tf);

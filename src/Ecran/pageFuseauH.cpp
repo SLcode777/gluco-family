@@ -24,6 +24,13 @@ void pageFuseauSetup()
     CanvaBase->drawRoundRect(7, 50, EcranW - 14, 260, 8, RGB565_WHITE);
     idxVisu = idxFuseau - 2;
     ImpressionZones();
+    if (SetupEnCours)
+    { // First-boot wizard: tell the user how to reach the next step
+        CanvaBase->setFont(u8g2_font_helvB14_tf);
+        CanvaBase->setTextColor(RGB565_WHITE);
+        PrintCentre(CanvaBase, T("SwipeNext"), EcranW / 2, EcranH - 20, 1);
+        CanvaBase->flush();
+    }
 }
 
 void handleTouch_Fuseau(uint16_t touchX, uint16_t touchY, int16_t DeltaTouchY)

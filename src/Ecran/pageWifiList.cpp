@@ -41,21 +41,21 @@ void WifiListSetup()
     }
     else
     {
-        CanvaBase->fillRoundRect(7, 54, EcranW - 14, nbWifi * 30 + 40, 8, RGB565_NAVY);
-        CanvaBase->drawRoundRect(7, 54, EcranW - 14, nbWifi * 30 + 40, 8, RGB565_WHITE);
+        CanvaBase->fillRoundRect(7, 54, EcranW - 14, nbWifi * 38 + 50, 8, RGB565_NAVY);
+        CanvaBase->drawRoundRect(7, 54, EcranW - 14, nbWifi * 38 + 50, 8, RGB565_WHITE);
         CanvaBase->setFont(u8g2_font_10x20_mf );
-        PrintCentre(CanvaBase, "|Nr|            SSID             |  RSSI |", EcranW2, 74, 1);
+        PrintCentre(CanvaBase, "Nr  SSID            RSSI", EcranW2, 76, 1);
         for (int i = 0; i < nbWifi; i++)
         {
             ssidList[i] = WiFi.SSID(i);
             int rssi = WiFi.RSSI(i);
 
             Boutons[i].X0 =15;
-            Boutons[i].Y0 =  90 + i * 30; // Position Y pour chaque réseau
+            Boutons[i].Y0 =  96 + i * 38; // Position Y pour chaque réseau
             Boutons[i].W = EcranW - 30;
-            Boutons[i].H = 26;
-            Boutons[i].Texte = Format2_WiFi(i + 1, ssidList[i], rssi);           
-            Bouton_Trace(Boutons[i]);    
+            Boutons[i].H = 32;
+            Boutons[i].Texte = Format2_WiFi(i + 1, ssidList[i], rssi);
+            Bouton_Trace(Boutons[i]);
         }
     }
 
@@ -68,7 +68,7 @@ void WifiListSetup()
 String Format2_WiFi(int num, const String &nom, int niveau)
 {
     char value[100];
-    sprintf(value, "|%2d|%-28s|%3d dBm|", num, nom.c_str(), niveau);
+    sprintf(value, "%d %.18s %ddBm", num, nom.c_str(), niveau); // keep the row narrower than the 320px screen
     return String(value);
 }
 

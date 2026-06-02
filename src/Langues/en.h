@@ -98,6 +98,18 @@ inline const char *LangEN = R"====(
   "Person":"Person",
   "FirstName":"First name",
   "Region":"Region",
-  "DexcomIndefini":"Dexcom account not defined"
+  "DexcomIndefini":"Dexcom account not defined",
+  "Welcome":"Welcome!",
+  "WelcomeTap":"Tap the screen to start",
+  "Configure":"Configure",
+  "LastStep":"Last step",
+  "HintLang":"Choose language and unit",
+  "HintTZ":"Choose your time zone",
+  "HintWifi":"Connect to your WiFi",
+  "HintDexcom":"Enter your Dexcom Share login",
+  "HintLibre":"Enter your LibreLinkUp login",
+  "SwipeNext":"Swipe left for next",
+  "ConfigDone":"Setup complete!",
+  "SwipeSettings":"Swipe left for settings"
 }
 )====";
