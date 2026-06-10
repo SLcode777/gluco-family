@@ -1,0 +1,88 @@
+name: Deploy flasher
+
+# Builds the firmware + the web flasher page and publishes them together to
+# GitHub Pages. Because the .bin is served from the same origin as the page,
+# there is no CORS configuration to worry about.
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment; let an in-progress run finish.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # ---------- Firmware (PlatformIO) ----------
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            ~/.cache/pip
+          key: pio-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
+
+      - name: Install PlatformIO
+        run: pip install --upgrade platformio
+
+      - name: Build firmware
+        run: pio run -e esp32-s3-devkitc-1
+
+      # ---------- Web (Vite + React + Tailwind) ----------
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install web dependencies
+        run: npm ci
+        working-directory: web
+
+      - name: Build web
+        run: npm run build
+        working-directory: web
+
+      # ---------- Inject the firmware(s) + version into the built site ----------
+      - name: Inject firmware
+        run: |
+          set -e
+          VERSION=$(grep -E '^\s*custom_prog_version' platformio.ini | head -1 | sed -E 's/.*=\s*//' | tr -d ' ')
+          echo "Firmware version: $VERSION"
+          BUILD=".pio/build/esp32-s3-devkitc-1"
+          MERGED="$BUILD/Gluco-Family_${VERSION}_merged.bin"   # full image, USB first-install
+          APP="$BUILD/Gluco-Family_${VERSION}.bin"             # app only, OTA update
+          test -f "$MERGED" || { echo "::error::Merged firmware not found: $MERGED"; exit 1; }
+          test -f "$APP"    || { echo "::error::App firmware not found: $APP"; exit 1; }
+          cp "$MERGED" web/dist/firmware.bin
+          cp "$APP"    web/dist/firmware-update.bin
+          sed -i -E "s/\"version\": *\"[^\"]*\"/\"version\": \"${VERSION}\"/" web/dist/manifest.json
+          printf '{"version":"%s"}\n' "$VERSION" > web/dist/version.json
+          ls -lh web/dist/firmware.bin web/dist/firmware-update.bin web/dist/version.json
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/dist
+
+      - id: deploy
+        uses: actions/deploy-pages@v4
