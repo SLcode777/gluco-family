@@ -9,16 +9,18 @@ const base = {
 }
 
 export function UsbIcon({ className }) {
+  // Standard USB "trident" symbol.
   return (
     <svg {...base} className={className}>
-      <path d="M12 2v18" />
-      <circle cx="12" cy="21" r="1.4" />
-      <path d="M12 7l2.5 2.5M12 7L9.5 9.5" />
-      <path d="M12 12h4.5V9m0 0l1.8 1.2-1.8 1.2" />
-      <path d="M12 14H7.5v3.5" />
-      <circle cx="7.5" cy="18" r="1.2" />
+      <circle cx="10" cy="7" r="1" />
+      <circle cx="4" cy="20" r="1" />
+      <path d="M4.7 19.3 19 5" />
+      <path d="m21 3-3 1 2 2z" />
+      <path d="M9.26 7.68 5 12l2 5" />
+      <path d="m10 14 5 2 3.5-3.5" />
+      <path d="m18 12 1-1 1 1-1 1z" />
     </svg>
-  )
+  );
 }
 
 export function ChipIcon({ className }) {
@@ -120,6 +122,23 @@ export function DownloadIcon({ className }) {
       <path d="M4 20h16" />
     </svg>
   )
+}
+
+export function CopyIcon({ className }) {
+  return (
+    <svg {...base} className={className}>
+      <rect x="9" y="9" width="11" height="11" rx="2" />
+      <path d="M5 15V5a2 2 0 0 1 2-2h8" />
+    </svg>
+  );
+}
+
+export function CursorIcon({ className }) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M5 3l5 17 2.4-6.6L19 11 5 3z" />
+    </svg>
+  );
 }
 
 export function RefreshIcon({ className }) {
