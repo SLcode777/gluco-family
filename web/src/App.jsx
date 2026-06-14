@@ -33,13 +33,13 @@ const deviceSteps = [
   {
     icon: WifiIcon,
     title: "Se connecter au WiFi",
-    text: "Touchez votre réseau WiFi dans la liste, puis tapez le mot de passe sur le clavier à l’écran.",
+    text: "Touchez votre réseau WiFi dans la liste, puis tapez le mot de passe sur le clavier à l’écran. Après validation, la carte va redémarrer.",
     photo: "La sélection du réseau WiFi",
   },
   {
     icon: UserIcon,
     title: "Entrer le compte Dexcom",
-    text: "Saisissez l’identifiant et le mot de passe Dexcom du premier compte que vous souhaitez suivre.",
+    text: "Saisissez l’identifiant et le mot de passe Dexcom du premier compte que vous souhaitez suivre. (Pour la région, choisir Non-US, sauf si votre compte est US (USA) ou Japonais (JP).)",
     photo: "L’écran de saisie du compte Dexcom",
   },
 ];
@@ -151,8 +151,9 @@ export default function App() {
                 <strong>« USB JTAG/serial debug unit xxx»</strong>
               </Bullet>
               <Bullet n="4">
-                Laissez faire jusqu’à <strong>100 %</strong>. Ne débranchez pas
-                la carte pendant l’installation.
+                Cliquez sur <strong>Install Gluco-Family</strong> et laissez
+                faire jusqu’à <strong>100 %</strong>. Ne débranchez pas la carte
+                pendant l’installation.
               </Bullet>
             </ol>
           </div>
