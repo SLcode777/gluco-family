@@ -25,7 +25,7 @@ SOFTWARE.
 const char *Disclaimer = R"====(
 Disclaimer
 
-Gluco-Monitor is designed to allow you to view data from your continuous glucose monitoring (CGM) system
+Gluco-Family is designed to allow you to view data from your continuous glucose monitoring (CGM) system
 FreeStyle Libre 2, 3 or Dexcom, stored on the respective servers.
 
 Please note that this software is not officially supported by Abbott or FreeStyle and was developed through
@@ -37,12 +37,18 @@ FreeStyle, Libre, LibreView, LibreLinkUp, and related brand marks are trademarks
 Dexcom and related brand marks are trademarks of Dexcom, Inc. in various jurisdictions. Other trademarks are the property of their respective owners.
 This software is not affiliated with Dexcom, Inc. or any of its subsidiaries
 
-Gluco-Monitor should not be used for medical diagnosis or treatment, 
+Gluco-Family should not be used for medical diagnosis or treatment, 
 nor should it be used as a substitute for professional medical advice. Individual symptoms and circumstances may vary.
 
-Gluco-Monitor is a personal DIY project and is open-source under the MIT License.
+Gluco-Family is a personal DIY project and is open-source under the MIT License. 
 
 Details and source code are available on the websites :
+https://slcode777.github.io/gluco-family/
+https://github.com/SLcode777/gluco-family
+
+Also Gluco-Family is based on the project Gluco-Monitor by F1ATB who provided the entire base code which I only adapted to fit 3 persons display instead of one.
+
+Details and source code of the original project are available on the websites :
 
 https://f1atb.fr 
 https://github.com/F1ATB
@@ -51,7 +57,7 @@ https://github.com/F1ATB
 const char *Avertissement = R"====(
 Avertissement
 
-Gluco-Monitor est conçu pour vous permettre de consulter les données de votre système de surveillance continue du glucose (CGM)
+Gluco-Family est conçu pour vous permettre de consulter les données de votre système de surveillance continue du glucose (CGM)
  FreeStyle Libre 2 , 3 ou Dexcom, stockées sur les serveurs respectifs. 
 Veuillez noter que ce logiciel n'est pas officiellement approuvé par Abbott/FreeStyle 
  et a été développé par rétro-ingénierie et recherches indépendantes.
@@ -66,12 +72,19 @@ Les autres marques appartiennent à leurs propriétaires respectifs.
 
 Ce logiciel n'est affilié ni à Dexcom, Inc. ni à aucune de ses filiales.
 
-Gluco-Monitor ne doit pas être utilisé pour établir un diagnostic médical, définir un traitement ou se substituer 
+Gluco-Family ne doit pas être utilisé pour établir un diagnostic médical, définir un traitement ou se substituer 
 aux conseils d'un professionnel de santé. Les symptômes et situations cliniques varient d'un individu à l'autre.
 
-Gluco-Monitor est le fruit d'un projet de développement personnel (DIY) et est diffusé en open source sous licence MIT.
+Gluco-Family est le fruit d'un projet de développement personnel (DIY) et est diffusé en open source sous licence MIT.
 
 Détails et sources sont disponibles sur les sites internet :
+
+https://slcode777.github.io/gluco-family/
+https://github.com/SLcode777/gluco-family
+
+Egalement, Gluco-Family est basé sur le projet Gluco-Monitor par F1ATB qui a laissé à disposition l'entiereté de son code que j'ai juste adapté pour afficher 3 personnes au lieu d'une.
+
+Détails et sources du projet original sont disponibles sur les sites internet :
 
 https://f1atb.fr 
 https://github.com/F1ATB

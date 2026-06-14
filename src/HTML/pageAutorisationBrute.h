@@ -69,8 +69,8 @@ const char *AutBruteHtml = R"====(
 
 <body onload="Init();">
     <div class="top">
-        <div class="Menugauche"><img src="/favicon.ico" />
-            <h1>Gluco-Monitor</h1>
+        <div class="Menugauche">
+            <h1>Gluco-Family</h1>
         </div>
         <div id="Menudroite">
             <div class="MiniMenu">
@@ -81,14 +81,14 @@ const char *AutBruteHtml = R"====(
             </div>
         </div>
     </div>
-    <h1 id="pageTitle">Gluco-Monitor Libreview DATA</h1>
+    <h1 id="pageTitle">Gluco-Family DATA</h1>
     <h2 data-i18n="AutoOnMonitor">&nbsp; </h2>
     <button class="annul" type="button" onclick="window.location.href='/'"
         data-i18n="Cancel">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</button>
 
     <div class="LeBas">
         <div>Version : <span id="version"></span></div>
-        <div><a href="https://f1atb.fr">https://F1ATB.fr</a></div>
+        <div><a href="https://slcode777.github.io/gluco-family/">https://slcode777.github.io/gluco-family/</a></div>
     </div>
     <script>
 

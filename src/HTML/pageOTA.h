@@ -137,7 +137,7 @@ const char* OTAupdateHtml = R"rawliteral(
     <div class="infoOTA">OTA = On The Air</div>
     <br>
     <div class="liste">
-      <span data-i18n="VersionNow">Votre version actuelle de Gluco-Monitor : </span><span id="Version_actu"></span>
+      <span data-i18n="VersionNow">Votre version actuelle de Gluco-Family : </span><span id="Version_actu"></span>
     </div>
     <br>
     <div class="liste" data-i18n="VersionDispo">
@@ -148,8 +148,8 @@ const char* OTAupdateHtml = R"rawliteral(
     </div>
     <div class="liste">
       <ul>
-        <li data-i18n="Telecharge">1 - Téléchargez sur votre ordinateur, la version binaire du logiciel du Gluco-Monitor souhaitée
-          <br>(Gluco-Monitor_x.x.x.bin) <span data-i18n="ClickBin"> -cliquant dessus-</span></li>
+        <li data-i18n="Telecharge">1 - Téléchargez sur votre ordinateur, la version binaire du logiciel du Gluco-Family souhaitée
+          <br>(Gluco-Family.x.x.bin) <span data-i18n="ClickBin"> -cliquant dessus-</span></li>
         <li data-i18n="SelectFile">--SelectFile--</li>
         <li ><span data-i18n="SendBin">3 - Cliquez sur </span>'<span data-i18n="SendBinBut">---</span>'</li>
       </ul>

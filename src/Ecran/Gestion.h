@@ -64,6 +64,11 @@ void AccueiLoop() ;
 void PrintCentre(Arduino_Canvas *canva, const String &S, int16_t X, int16_t Y, uint8_t Sz);
 void PrintGauche(Arduino_Canvas *canva, const String &S, int16_t X, int16_t Y, uint8_t Sz);
 void PrintDroite(Arduino_Canvas *canva, const String &S, int16_t X, int16_t Y, uint8_t Sz);
+// Word-wrapped left-aligned text: breaks on spaces (never mid-word), every line
+// stays indented at X (so wrapped lines don't run back to the screen edge), and
+// nothing is drawn past maxRight. lineH is the vertical step between lines.
+// Returns the Y at which the next line should start (so callers can stack lines).
+int16_t PrintGaucheWrap(Arduino_Canvas *canva, const String &S, int16_t X, int16_t Y, int16_t maxRight, int16_t lineH);
 void QuestionConfiguration(String Question, void (*fonctionSiOK)());
 void EcranBienvenue();
 void EtapeAssistant(String titre, String hint, void (*fonctionSiOK)());
@@ -96,5 +101,7 @@ struct RadioBouton
 
 bool RadioBouton_Appui(RadioBouton &rb, int16_t x, int16_t y);
 void RadioBouton_Trace(RadioBouton &rb, uint16_t colorCentre = C_grisFonce);
+// Like RadioBouton_Trace but the label is word-wrapped within [text start, maxRight].
+void RadioBouton_TraceWrap(RadioBouton &rb, int16_t maxRight, int16_t lineH, uint16_t colorCentre = C_grisFonce);
 
 void AlertePasdeGlycemie();

@@ -13,6 +13,8 @@
 #define KEY_H 50
 #define KEY_SPACING 3
 #define START_Y 130
+#define INPUT_Y 66 // input box top (pushed down so it clears the title)
+#define INPUT_H 40
 
 String textBuffer = "";
 
@@ -26,17 +28,19 @@ static bool cursorVisible = true;
 // CLAVIERS
 // ==========================
 
-const char *alphaKeys[4][10] = {
+const char *alphaKeys[5][10] = {
     {"A", "Z", "E", "R", "T", "Y", "U", "I", "O", "P"},
     {"Q", "S", "D", "F", "G", "H", "J", "K", "L", "M"},
     {"W", "X", "C", "V", "B", "N", ".", "-", "@", "_"},
-    {"SHIFT", "SPACE", "DEL", "123", "Cancel", "OK", "", "", "", ""}};
+    {"SHIFT", "SPACE", "DEL", "", "", "", "", "", "", ""},
+    {"123", "Cancel", "OK", "", "", "", "", "", "", ""}};
 
-const char *numKeys[4][10] = {
+const char *numKeys[5][10] = {
     {"1", "2", "3", "4", "5", "6", "7", "8", "9", "0"},
     {"+", "-", "*", "/", "=", "%", "(", ")", "#", "!"},
     {".", ",", "?", ";", ":", "'", "\"", "&", "€", "$"},
-    {"ABC", "SPACE", "DEL", ".com", "Cancel", "OK", "", "", "", ""}};
+    {"ABC", "SPACE", "DEL", "", "", "", "", "", "", ""},
+    {".com", "Cancel", "OK", "", "", "", "", "", "", ""}};
 
 void Position(int row, int col, int &x, int &y, int &keyWidth, int &keyHeight);
 
@@ -46,18 +50,45 @@ void Position(int row, int col, int &x, int &y, int &keyWidth, int &keyHeight);
 
 void drawTextBox()
 {
-  CanvaBase->fillRect(20, 50, EcranW - 40, 40, RGB565_LIGHTGREY);
-  CanvaBase->drawRect(20, 50, EcranW - 40, 40, RGB565_BLACK);
+  CanvaBase->fillRect(20, INPUT_Y, EcranW - 40, INPUT_H, RGB565_LIGHTGREY);
+  CanvaBase->drawRect(20, INPUT_Y, EcranW - 40, INPUT_H, RGB565_BLACK);
   CanvaBase->setFont(u8g2_font_helvB14_tf);
   CanvaBase->setTextSize(1);
   CanvaBase->setTextColor(RGB565_BLACK);
-  CanvaBase->setCursor(30, 76);
+  CanvaBase->setCursor(30, INPUT_Y + 26);
 
   String displayText = textBuffer;
   if (cursorVisible)
     displayText += "_";
 
   CanvaBase->print(displayText);
+}
+
+// Draws SHIFT / SPACE / DEL as vector icons (the text font has no arrow glyphs).
+void drawKeyIcon(const String &id, int cx, int cy, bool active)
+{
+  const uint16_t col = RGB565_WHITE;
+  if (id == "SHIFT")
+  {
+    // Up arrow; underlined when SHIFT (caps) is active.
+    CanvaBase->fillTriangle(cx, cy - 12, cx - 12, cy, cx + 12, cy, col);
+    CanvaBase->fillRect(cx - 4, cy, 9, 11, col);
+    if (active)
+      CanvaBase->fillRect(cx - 10, cy + 14, 21, 3, col);
+  }
+  else if (id == "DEL")
+  {
+    // Left arrow (backspace).
+    CanvaBase->fillTriangle(cx - 13, cy, cx - 2, cy - 9, cx - 2, cy + 9, col);
+    CanvaBase->fillRect(cx - 2, cy - 3, 15, 7, col);
+  }
+  else if (id == "SPACE")
+  {
+    // Space bracket: bottom bar with short up-ticks at both ends.
+    CanvaBase->fillRect(cx - 15, cy + 6, 31, 3, col);
+    CanvaBase->fillRect(cx - 15, cy - 2, 3, 10, col);
+    CanvaBase->fillRect(cx + 13, cy - 2, 3, 10, col);
+  }
 }
 
 void drawKey(int row, int col)
@@ -72,11 +103,18 @@ void drawKey(int row, int col)
   CanvaBase->fillRoundRect(x, y, ww, hh, 8, RGB565_BLACK);
   CanvaBase->drawRoundRect(x, y, ww, hh, 8, RGB565_WHITE);
 
+  String keyLabel = label;
+  // Special keys are shown as icons instead of text.
+  if (keyLabel == "SHIFT" || keyLabel == "DEL" || keyLabel == "SPACE")
+  {
+    drawKeyIcon(keyLabel, x + ww / 2, y + hh / 2, isUpper);
+    return;
+  }
+
   CanvaBase->setTextColor(RGB565_WHITE);
   CanvaBase->setFont(u8g2_font_helvB14_tf);
   CanvaBase->setTextSize(1);
 
-  String keyLabel = label;
   if (!isUpper && !isNumeric && keyLabel.length() == 1)
     keyLabel.toLowerCase();
 
@@ -91,7 +129,7 @@ void drawKey(int row, int col)
 
 void drawKeyboard()
 {
-  for (int r = 0; r < 4; r++)
+  for (int r = 0; r < 5; r++)
     for (int c = 0; c < 10; c++)
       drawKey(r, c);
 }
@@ -118,7 +156,7 @@ void highlightKey(int row, int col)
 void handleTouch_clavier(int tx, int ty)
 {
   int x, y, w, h;
-  for (int r = 0; r < 4; r++)
+  for (int r = 0; r < 5; r++)
   {
     for (int c = 0; c < 10; c++)
     {
@@ -165,7 +203,7 @@ void handleTouch_clavier(int tx, int ty)
           }
           if (PageActu == pageClavier_CompteEmail || PageActu == pageClavier_ComptePwd ||
               PageActu == pageClavier_DexcomUsername || PageActu == pageClavier_DexcomPwd ||
-+              PageActu == pageClavier_PersonName)
+              PageActu == pageClavier_PersonName)
           {
             CompteSetup();
       
@@ -253,8 +291,8 @@ void Position(int row, int col, int &x, int &y, int &keyWidth, int &keyHeight)
     // First 3 rows: 10 keys spread across the full width
     keyWidth = (EcranW - 2 * margin - 9 * KEY_SPACING) / 10;
   } else {
-    // Last row: 6 wider keys (SHIFT, SPACE, DEL, 123/ABC, Cancel, OK)
-    keyWidth = (EcranW - 2 * margin - 5 * KEY_SPACING) / 6;
+    // Last 2 rows: 3 wide keys each (row 3: SHIFT/SPACE/DEL, row 4: 123-ABC/Cancel/OK)
+    keyWidth = (EcranW - 2 * margin - 2 * KEY_SPACING) / 3;
   }
 
   x = margin + col * (keyWidth + KEY_SPACING);

@@ -81,7 +81,7 @@ void DeserializeConfiguration(String json) {
 
   int glucoseUnitInt = conf["glucoseUnit"] | GLUCOSE_UNIT_MGDL;
   glucoseUnit = (GlucoseUnit)glucoseUnitInt;
-  int glucoseColorInt = conf["glucoseColor"] | GLUCOSE_BLANC;
+  int glucoseColorInt = conf["glucoseColor"] | GLUCOSE_COULEUR;
   glucoseColor = (GlucoseColor)glucoseColorInt;
 
   // -------- Per-person fields (v1 vs v2) --------

@@ -405,6 +405,59 @@ void PrintDroite(Arduino_Canvas *canva, const String &S, int16_t X, int16_t Y, u
   canva->setCursor(X - w - 4, Y + 3);
   canva->print(utf8ToLatin15(S));
 }
+int16_t PrintGaucheWrap(Arduino_Canvas *canva, const String &S, int16_t X, int16_t Y,
+                        int16_t maxRight, int16_t lineH)
+{
+  // u8g2_font_10x20 is a fixed-width 10px-per-char font, so we can size lines
+  // by character count. Convert once, then never re-convert when printing.
+  const int16_t charW = 10;
+  canva->setTextSize(1);
+  String s = utf8ToLatin15(S);
+  int16_t avail = maxRight - (X + 4);
+  int maxChars = avail / charW;
+  if (maxChars < 1)
+    maxChars = 1;
+
+  int16_t cy = Y;
+  String line = "";
+  int pos = 0, len = s.length();
+  while (pos < len)
+  {
+    int sp = s.indexOf(' ', pos);
+    String word;
+    if (sp < 0)
+    {
+      word = s.substring(pos);
+      pos = len;
+    }
+    else
+    {
+      word = s.substring(pos, sp);
+      pos = sp + 1;
+    }
+
+    String candidate = (line.length() == 0) ? word : line + " " + word;
+    if ((int)candidate.length() > maxChars && line.length() > 0)
+    {
+      // Current word doesn't fit: flush the line, push the word to the next one.
+      canva->setCursor(X + 4, cy + 3);
+      canva->print(line);
+      cy += lineH;
+      line = word;
+    }
+    else
+    {
+      line = candidate;
+    }
+  }
+  if (line.length() > 0)
+  {
+    canva->setCursor(X + 4, cy + 3);
+    canva->print(line);
+  }
+  // Y where the next line should start (lets callers stack lines vertically).
+  return cy + lineH;
+}
 
 String utf8ToLatin15(const String &utf8)
 {
@@ -568,6 +621,14 @@ void RadioBouton_Trace(RadioBouton &rb, uint16_t colorCentre)
   CanvaBase->setTextColor(RGB565_WHITE);
   PrintGauche(CanvaBase, rb.Texte, rb.X0 + 2 * rb.R + 2, rb.Y0 + rb.R + 2, 1);
 }
+void RadioBouton_TraceWrap(RadioBouton &rb, int16_t maxRight, int16_t lineH, uint16_t colorCentre)
+{
+  CanvaBase->fillCircle(rb.X0 + rb.R, rb.Y0 + rb.R, rb.R, colorCentre);
+  CanvaBase->drawCircle(rb.X0 + rb.R, rb.Y0 + rb.R, rb.R, RGB565_WHITE);
+  CanvaBase->setFont(u8g2_font_10x20_mf);
+  CanvaBase->setTextColor(RGB565_WHITE);
+  PrintGaucheWrap(CanvaBase, rb.Texte, rb.X0 + 2 * rb.R + 2, rb.Y0 + rb.R + 2, maxRight, lineH);
+}
 void AlertePasdeGlycemie()
 {
   CanvaBase->fillScreen(RGB565_DARKSALMON);
@@ -726,9 +787,9 @@ void TraceEcranAccueil()
   CanvaBase->setFont(u8g2_font_fub35_tf);
   PrintCentre(CanvaBase, "Gluco-Family", EcranW2, EcranH2 - 10, 1);
   CanvaBase->setFont(u8g2_font_helvB18_tf);
-  PrintDroite(CanvaBase, T("byF1ATB"), EcranW - 10, EcranH - 30, 1);
+  PrintDroite(CanvaBase, T("byAuthor"), EcranW - 10, EcranH - 30, 1);
   CanvaBase->setFont(u8g2_font_helvB14_tf);
-  PrintGauche(CanvaBase, "https://F1ATB.fr", 10, EcranH - 30, 1);
+  PrintGauche(CanvaBase, "https://stellam.dev", 10, EcranH - 30, 1);
   CanvaBase->flush();
   delay(500);
 }

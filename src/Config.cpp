@@ -40,7 +40,7 @@ uint64_t T_On_seconde = 0;
 
 // Glycémie
 GlucoseUnit glucoseUnit = GLUCOSE_UNIT_MGDL;
-GlucoseColor glucoseColor = GLUCOSE_BLANC;
+GlucoseColor glucoseColor = GLUCOSE_COULEUR;
 
 
 //Generaux

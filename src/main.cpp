@@ -91,7 +91,7 @@ void setup()
   // =========== Ecran =========================
   bool LangueNonDefini=false;
   if(LaLangue == LANG_NONDEF){
-    LaLangue = LANG_EN; //Par defaut
+    LaLangue = LANG_FR; //Par defaut
     LangueNonDefini=true;
   }
   InitEcran();
@@ -99,7 +99,7 @@ void setup()
   // ===== Definition de la langue si non encore definie ====
   if (LangueNonDefini)
   {
-    EcranBienvenue(); // First-boot welcome (shown in English, before language is chosen)
+    EcranBienvenue(); // First-boot welcome (shown in French by default, before language is chosen)
     EtapeAssistant(T("Lang"), T("HintLang"), pageLangueSetup);
     EtapeAssistant(T("F_Hor"), T("HintTZ"), pageFuseauSetup);
   }

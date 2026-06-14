@@ -73,17 +73,20 @@ void ImpressionZones()
         Rboutons[NbBoutons].Y0 = Y;
         Rboutons[NbBoutons].R = 15;
         Rboutons[NbBoutons].Texte = nomTZ[i];
+        // maxRight = inner right edge of the blue card; 26px line spacing.
         if (i == idxFuseau)
         {
-            RadioBouton_Trace(Rboutons[NbBoutons], RGB565_BLUE);
+            RadioBouton_TraceWrap(Rboutons[NbBoutons], EcranW - 13, 26, RGB565_BLUE);
         }
         else
         {
-            RadioBouton_Trace(Rboutons[NbBoutons]);
+            RadioBouton_TraceWrap(Rboutons[NbBoutons], EcranW - 13, 26);
         }
         NbBoutons++;
-        Y = Y + 40;
-        if (Y > 280)
+        // 64px row pitch leaves room for labels that wrap onto a 2nd line
+        // (long timezone names) without overlapping the next entry.
+        Y = Y + 64;
+        if (Y > 290)
             break;
     }
     CanvaBase->flush();
