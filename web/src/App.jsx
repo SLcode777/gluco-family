@@ -1,6 +1,6 @@
 import { useState } from "react";
 import InstallButton from "./components/InstallButton.jsx";
-import UpdateSection from "./components/UpdateSection.jsx";
+// import UpdateSection from "./components/UpdateSection.jsx";
 import PhotoSlot from "./components/PhotoSlot.jsx";
 import {
   UsbIcon,
@@ -22,25 +22,25 @@ const deviceSteps = [
     icon: LanguageIcon,
     title: "Choisir la langue",
     text: "À l'allumage, l'écran propose plusieurs langues. Touchez « Français ».",
-    photo: "L'écran d'accueil avec le choix de la langue",
+    image: "./photos/languages.jpg",
   },
   {
     icon: ClockIcon,
     title: "Choisir le fuseau horaire",
     text: "Sélectionnez votre fuseau (ex. Paris) pour afficher la bonne heure.",
-    photo: "La liste des fuseaux horaires",
+    image: "./photos/timezone.jpg",
   },
   {
     icon: WifiIcon,
     title: "Se connecter au WiFi",
     text: "Touchez votre réseau WiFi dans la liste, puis tapez le mot de passe sur le clavier à l’écran. Après validation, la carte va redémarrer.",
-    photo: "La sélection du réseau WiFi",
+    image: "./photos/wifi.jpg",
   },
   {
     icon: UserIcon,
     title: "Entrer le compte Dexcom",
     text: "Saisissez l’identifiant et le mot de passe Dexcom du premier compte que vous souhaitez suivre. (Pour la région, choisir Non-US, sauf si votre compte est US (USA) ou Japonais (JP).)",
-    photo: "L’écran de saisie du compte Dexcom",
+    image: "./photos/dexcom.jpg",
   },
 ];
 
@@ -158,7 +158,11 @@ export default function App() {
             </ol>
           </div>
           <div className="order-1 sm:order-2">
-            <PhotoSlot caption="La carte branchée en USB à l’ordinateur" />
+            <PhotoSlot
+              caption="La carte branchée en USB à l’ordinateur"
+              src="./photos/plugged_monitor.jpg"
+              alt="La carte ESP32 branchée en USB à l’ordinateur"
+            />
           </div>
         </div>
 
@@ -210,8 +214,8 @@ export default function App() {
                 pour ouvrir le menu <strong>Paramètres</strong>.
               </Bullet>
               <Bullet n="2">
-                Ajoutez le nom et le compte Dexcom de chaque personne à suivre,
-                puis enregistrez.
+                Cliquez sur Personne 2 et 3 pour ajoutez le nom et le compte
+                Dexcom de chaque personne à suivre, puis enregistrez.
               </Bullet>
               <Bullet n="3">
                 Les glycémies des 3 membres s’affichent alors côte à côte sur la
@@ -219,7 +223,13 @@ export default function App() {
               </Bullet>
             </ol>
           </div>
-          <PhotoSlot caption="La page Réglages dans le navigateur" />
+          <div className="mx-auto w-56">
+            <PhotoSlot
+              ratio="aspect-[2/3]"
+              src="./photos/settings.jpg"
+              alt="settings page"
+            />
+          </div>
         </div>
 
         {/* Méthode alternative : depuis le navigateur */}
@@ -255,12 +265,12 @@ export default function App() {
       </section>
 
       {/* ---------- MISE A JOUR (OTA) ---------- */}
-      <UpdateSection />
+      {/* <UpdateSection /> */}
 
       {/* ---------- FAQ ---------- */}
       <section className="bg-white py-14">
         <div className="mx-auto max-w-2xl px-5">
-          <SectionTitle>Petits soucis fréquents</SectionTitle>
+          <SectionTitle>F.A.Q.</SectionTitle>
           <div className="mt-8 space-y-3">
             <Faq q="Le bouton « Flasher » est grisé ou rien ne se passe.">
               Vous êtes sûrement sur Firefox, Safari, ou sur un téléphone.
@@ -277,13 +287,13 @@ export default function App() {
               Débranchez puis rebranchez la carte pour la redémarrer. Le premier
               démarrage peut prendre quelques secondes.
             </Faq>
-            <Faq q="Je veux juste mettre à jour une carte déjà installée.">
+            {/* <Faq q="Je veux juste mettre à jour une carte déjà installée.">
               Le bouton « Flasher ma carte » sert à la{" "}
               <strong>première installation</strong> (il remet la carte à neuf).
               Pour une simple mise à jour qui conserve votre configuration,
               utilisez la section <strong>« Mettre à jour la carte »</strong>{" "}
               ci-dessus.
-            </Faq>
+            </Faq> */}
             <Faq q="Comment me contacter ?">
               Une question, un souci, une idée&nbsp;? Vous pouvez écrire à la
               développeuse :
@@ -302,6 +312,22 @@ export default function App() {
           Outil maison, sans lien avec Dexcom. Ne remplace pas un dispositif
           médical.
         </p>
+        <a
+          href="https://github.com/SLcode777/gluco-family"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-4 inline-flex items-center gap-2 font-medium text-slate-600 transition hover:text-brand-600"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            className="h-5 w-5"
+            fill="currentColor"
+            aria-hidden
+          >
+            <path d="M12 .5C5.73.5.5 5.73.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56v-2c-3.2.7-3.88-1.54-3.88-1.54-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.69 5.39-5.25 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.68.8.56A10.53 10.53 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5z" />
+          </svg>
+          Voir le projet sur GitHub
+        </a>
       </footer>
     </div>
   );
@@ -378,7 +404,7 @@ function Bullet({ n, children }) {
   );
 }
 
-function DeviceStep({ n, icon: Icon, title, text, photo }) {
+function DeviceStep({ n, icon: Icon, title, text, image }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5">
       <div className="flex items-center gap-3">
@@ -389,8 +415,9 @@ function DeviceStep({ n, icon: Icon, title, text, photo }) {
         <h3 className="font-semibold text-slate-900">{title}</h3>
       </div>
       <p className="mt-3 text-sm text-slate-600">{text}</p>
-      <div className="mt-4">
-        <PhotoSlot ratio="aspect-[3/2]" caption={photo} />
+      {/* Image portrait centrée (object-cover : remplit tout le cadre) */}
+      <div className="mx-auto mt-4 w-40">
+        <PhotoSlot ratio="aspect-[2/3]" src={image} />
       </div>
     </div>
   );

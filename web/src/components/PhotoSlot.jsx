@@ -1,6 +1,6 @@
 // Placeholder for a real photo/screenshot to add later.
 // Drop a file in web/public/photos/ and pass src="./photos/mon-image.jpg".
-export default function PhotoSlot({ src, alt, caption, ratio = 'aspect-[4/3]' }) {
+export default function PhotoSlot({ src, alt, caption, ratio = 'aspect-[4/3]', fit = 'object-cover' }) {
   if (src) {
     return (
       <figure className="m-0">
@@ -8,7 +8,7 @@ export default function PhotoSlot({ src, alt, caption, ratio = 'aspect-[4/3]' })
           src={src}
           alt={alt}
           loading="lazy"
-          className={`w-full ${ratio} rounded-xl object-cover ring-1 ring-slate-200`}
+          className={`w-full ${ratio} rounded-xl ${fit} bg-slate-50 ring-1 ring-slate-200`}
         />
         {caption && (
           <figcaption className="mt-2 text-center text-sm text-slate-500">{caption}</figcaption>
