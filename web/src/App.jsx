@@ -63,21 +63,34 @@ export default function App() {
   return (
     <div className="min-h-screen">
       {/* ---------- HERO ---------- */}
-      <header className="mx-auto max-w-3xl px-5 pt-16 pb-10 text-center sm:pt-24">
-        <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-brand-100 px-4 py-1.5 text-sm font-medium text-brand-700">
-          <ChipIcon className="h-4 w-4" />
-          Installation en 1 clic
+      <header className="mx-auto max-w-6xl px-5 pt-16 pb-10 sm:pt-24">
+        <div className="grid items-center gap-10 sm:grid-cols-2">
+          {/* Texte à gauche */}
+          <div className="text-center sm:text-left">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-brand-100 px-4 py-1.5 text-sm font-medium text-brand-700">
+              <ChipIcon className="h-4 w-4" />
+              Installation en 1 clic
+            </div>
+            <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">
+              Installez <span className="text-brand-600">Gluco-Family</span> sur
+              votre carte
+            </h1>
+            <p className="mt-5 text-lg text-slate-600">
+              Branchez votre carte, cliquez sur un bouton, et c’est installé.
+              Pas de logiciel à télécharger, pas de ligne de commande. On vous
+              guide ensuite pas à pas.
+            </p>
+          </div>
+          {/* Image du moniteur à droite */}
+          <div>
+            <img
+              src="./photos/glucofamily.webp"
+              alt="Le moniteur Gluco-Family affichant les glycémies de 3 membres de la famille"
+              loading="eager"
+              className="w-full rounded-2xl shadow-lg ring-1 ring-slate-200"
+            />
+          </div>
         </div>
-        <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">
-          Installez <span className="text-brand-600">Gluco-Family</span>
-          <br />
-          sur votre carte
-        </h1>
-        <p className="mx-auto mt-5 max-w-xl text-lg text-slate-600">
-          Branchez votre carte, cliquez sur un bouton, et c’est installé. Pas de
-          logiciel à télécharger, pas de ligne de commande. On vous guide
-          ensuite pas à pas.
-        </p>
       </header>
 
       {/* ---------- PREREQUIS ---------- */}
@@ -304,7 +317,7 @@ export default function App() {
       </section>
 
       {/* ---------- FOOTER ---------- */}
-      <footer className="border-t border-slate-200 py-10 text-center text-sm text-slate-500">
+      <footer className="border-t border-slate-200 px-5 py-10 text-center text-sm text-slate-500">
         <p>
           Fait avec ❤️ pour les familles concernées par le diabète de type 1.
         </p>
