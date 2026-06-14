@@ -1,4 +1,5 @@
 node_modules
 dist
-# Le firmware est injecté par GitHub Actions au déploiement, pas versionné ici
+# Le firmware et la version sont injectés par GitHub Actions au déploiement, pas versionnés ici
 public/firmware.bin
+public/version.json
