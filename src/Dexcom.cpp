@@ -55,31 +55,32 @@ bool loginDexcomShare(Person& person)
         
         httpCode = https.POST(payload);
         response = https.getString();
-        
-        // Format ConnectionJSON as proper JSON with accountId field
-        JsonDocument connDoc;
-        response.trim();
-        if (response.startsWith("\"") && response.endsWith("\"")) {
-            connDoc["accountId"] = response.substring(1, response.length() - 1);
-        } else {
-            connDoc["accountId"] = response;
-        }
-        serializeJson(connDoc, ConnectionJSON);
-        
         https.end();
-        
+
+        // Validate HTTP status BEFORE touching ConnectionJSON, so an error
+        // body (e.g. a 504 gateway timeout) never gets stored as an accountId.
         if (httpCode != HTTP_CODE_OK) {
             Serial.println("Authentification échouée: " + String(httpCode));
+            Serial.println("Réponse Dexcom: " + response);
             EcranPrintln(HEURE + T("LoginFailed") + String(httpCode), RGB565_ORANGE);
+            // Server-side error (5xx) or connection failure (<=0): Dexcom asks
+            // us to wait >=120 s before retrying. Honour that back-off.
+            if (httpCode >= 500 || httpCode <= 0)
+                person.backoffUntilMillis = millis() + 120000;
             return false;
         }
-        
+
         response.trim();
         if (!response.startsWith("\"") || !response.endsWith("\"")) {
             Serial.println("Format de réponse invalide");
             return false;
         }
-        
+
+        // Valid response only: format ConnectionJSON with the accountId field
+        JsonDocument connDoc;
+        connDoc["accountId"] = response.substring(1, response.length() - 1);
+        serializeJson(connDoc, ConnectionJSON);
+
         person.dexcomAccountId = response.substring(1, response.length() - 1);
         Serial.println("Account ID obtenu: " + String(person.dexcomAccountId));
     } else {
@@ -104,31 +105,31 @@ bool loginDexcomShare(Person& person)
     
     httpCode = https.POST(payload);
     response = https.getString();
-    
-    // Format LoginJSON as proper JSON with sessionId field
-    JsonDocument loginJsonDoc;
-    response.trim();
-    if (response.startsWith("\"") && response.endsWith("\"")) {
-        loginJsonDoc["sessionId"] = response.substring(1, response.length() - 1);
-    } else {
-        loginJsonDoc["sessionId"] = response;
-    }
-    serializeJson(loginJsonDoc, LoginJSON);
-    
     https.end();
-    
+
+    // Validate HTTP status BEFORE touching LoginJSON, so an error body
+    // (e.g. a 504 gateway timeout) never gets stored as a sessionId.
     if (httpCode != HTTP_CODE_OK) {
         Serial.println("Login échoué: " + String(httpCode));
+        Serial.println("Réponse Dexcom: " + response);
         EcranPrintln(HEURE + T("LoginFailed") + String(httpCode), RGB565_ORANGE);
+        // Server-side error (5xx) or connection failure (<=0): back off >=120 s.
+        if (httpCode >= 500 || httpCode <= 0)
+            person.backoffUntilMillis = millis() + 120000;
         return false;
     }
-    
+
     response.trim();
     if (!response.startsWith("\"") || !response.endsWith("\"")) {
         Serial.println("Format de réponse invalide");
         return false;
     }
-    
+
+    // Valid response only: format LoginJSON with the sessionId field
+    JsonDocument loginJsonDoc;
+    loginJsonDoc["sessionId"] = response.substring(1, response.length() - 1);
+    serializeJson(loginJsonDoc, LoginJSON);
+
     person.dexcomSessionId = response.substring(1, response.length() - 1);
     Serial.println("Session ID: " + String(person.dexcomSessionId));
     
@@ -252,6 +253,11 @@ void LectureDexcom()
         if (!person.configured) continue;
         if (person.sensorType != SENSOR_DEXCOM) continue;
         if (person.dexcomUsername == "" || person.dexcomPassword == "") continue;
+
+        // Respect a server-requested back-off (e.g. after a 504). Rollover-safe:
+        // (long)(target - now) > 0 means the target is still in the future.
+        if (person.backoffUntilMillis != 0 &&
+            (long)(person.backoffUntilMillis - millis()) > 0) continue;
 
         // Default polling interval: 5 min 15 s (Dexcom updates every 5 min + safety margin)
         person.recurMillis = 315000;

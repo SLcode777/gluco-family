@@ -147,7 +147,7 @@ void Init_Server()
                 doc["dexcomRegion"] = dexcomRegion;
                 doc["libreEmail"] = libreEmail;
                 doc["libreZone"] = libreZone;
-                doc["hasLibrePass"] = (librePass.length() > 0);
+                doc["librePass"] = librePass;
                 JsonArray arr = doc["persons"].to<JsonArray>();
                 for (int i = 0; i < MAX_PERSONS; i++)
                 {
@@ -155,7 +155,7 @@ void Init_Server()
                     p["name"] = persons[i].name;
                     p["sensorType"] = (int)persons[i].sensorType;
                     p["dexcomUsername"] = persons[i].dexcomUsername;
-                    p["hasDexcomPass"] = (persons[i].dexcomPassword.length() > 0);
+                    p["dexcomPass"] = persons[i].dexcomPassword;
                     p["targetLow"] = persons[i].targetLow;
                     p["targetHigh"] = persons[i].targetHigh;
                     p["configured"] = persons[i].configured;

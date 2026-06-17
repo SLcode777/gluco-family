@@ -36,6 +36,7 @@ struct Person {
   unsigned long lastReceptionMillis;
   unsigned long lastOkMillis;
   unsigned long recurMillis;         // adaptative poll intervalle
+  unsigned long backoffUntilMillis;  // skip polling until this time (server asked us to back off)
 
   // glycemic targets
   int16_t targetLow;

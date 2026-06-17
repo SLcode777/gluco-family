@@ -21,6 +21,9 @@ const char *SettingsHtml = R"====(
         input, select { width:54%; padding:6px; box-sizing:border-box; background:#222; color:#fff;
                         border:1px solid #555; border-radius:5px; }
         input[type=number] { width:26%; }
+        .pw { width:46%; }
+        .eye { width:auto; padding:6px 9px; margin-left:4px; background:#333; color:#fff;
+               border:1px solid #555; border-radius:5px; cursor:pointer; vertical-align:middle; }
         .save { display:block; width:100%; padding:12px; font-size:18px; margin-top:10px;
                 background:#2563eb; color:#fff; border:none; border-radius:8px; }
         #status { display:block; text-align:center; margin-top:10px; min-height:22px; }
@@ -42,7 +45,7 @@ const char *SettingsHtml = R"====(
             <label data-i18n="Region">Dexcom region</label>
             <select id="region"><option>Non-US</option><option>US</option><option>JP</option></select><br>
             <label data-i18n="EmailLinkUp">LibreLinkUp email</label><input id="lemail"><br>
-            <label data-i18n="PasseLinkUp">LibreLinkUp password</label><input id="lpass" type="password"><br>
+            <label data-i18n="PasseLinkUp">LibreLinkUp password</label><input id="lpass" type="password" class="pw"><button type="button" class="eye" onclick="togglePw('lpass',this)">&#128065;</button><br>
             <label data-i18n="ServerZone">LibreLinkUp zone</label><input id="lzone">
         </fieldset>
         <button class="save" onclick="save()" data-i18n="Save">Save</button>
@@ -54,14 +57,21 @@ const char *SettingsHtml = R"====(
         function tr(k, f) { return (typeof Traduction !== "undefined" && Traduction[k]) ? Traduction[k] : f; }
         function esc(s) { return (s || "").toString().replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;"); }
 
+        // Reveal/hide a single password field; swap the eye icon accordingly.
+        function togglePw(id, btn) {
+            const e = GID(id);
+            if (e.type === "password") { e.type = "text"; btn.innerHTML = "&#128584;"; } // 🙈 = shown
+            else { e.type = "password"; btn.innerHTML = "&#128065;"; }                   // 👁 = hidden
+        }
+
         function personBlock(i, p) {
             return `<fieldset>
                 <legend>${tr("Person", "Person")} ${i + 1}</legend>
                 <label data-i18n="FirstName">Name</label><input id="name${i}" value="${esc(p.name)}"><br>
                 <label data-i18n="SensorType">Sensor</label>
-                <select id="sensor${i}"><option value="1">Dexcom</option><option value="0">LibreLinkUp</option></select><br>
+                <select id="sensor${i}"><option value="1">Dexcom</option><option value="0">FreeStyle</option></select><br>
                 <label data-i18n="UsernameDexcom">Dexcom username</label><input id="duser${i}" value="${esc(p.dexcomUsername)}"><br>
-                <label data-i18n="PasseDexcom">Dexcom password</label><input id="dpass${i}" type="password"><br>
+                <label data-i18n="PasseDexcom">Dexcom password</label><input id="dpass${i}" type="password" class="pw" value="${esc(p.dexcomPass)}"><button type="button" class="eye" onclick="togglePw('dpass${i}',this)">&#128065;</button><br>
                 <label data-i18n="TargetLow">Target low</label><input id="low${i}" type="number" value="${p.targetLow}">
                 <label data-i18n="TargetHigh">Target high</label><input id="high${i}" type="number" value="${p.targetHigh}">
             </fieldset>`;
@@ -76,12 +86,11 @@ const char *SettingsHtml = R"====(
                     GID("persons").innerHTML = html;
                     for (let i = 0; i < NB; i++) {
                         GID("sensor" + i).value = cfg.persons[i].sensorType;
-                        if (cfg.persons[i].hasDexcomPass) GID("dpass" + i).placeholder = tr("PwdUnchanged", "(leave blank = unchanged)");
                     }
                     GID("region").value = cfg.dexcomRegion || "Non-US";
                     GID("lemail").value = cfg.libreEmail || "";
                     GID("lzone").value = cfg.libreZone || "";
-                    if (cfg.hasLibrePass) GID("lpass").placeholder = tr("PwdUnchanged", "(leave blank = unchanged)");
+                    GID("lpass").value = cfg.librePass || "";
                     SetTraduction();
                 })
                 .catch(() => { GID("status").textContent = "Error loading config"; });
