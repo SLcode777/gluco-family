@@ -33,6 +33,8 @@ inline const char *LangES = R"====(
   "GraphFailed":" Sin gráfico de Libreview, código HTTP: ",
   "NoRecentGluco":"No hay glucemia reciente",
   "LinkUpIndefini":"Cuenta LibreLinkUp no definida",
+  "LibreToU":"LibreLinkUp: acepte las nuevas condiciones en la aplicación",
+  "LibreNoMatch":"Ningún paciente LibreLinkUp encontrado para ",
   "ZoneLinkUp":"Zona del servidor LibreLinkUp",
   "Serveur80":"Servidor web activo en el puerto 80",
   "Update":"Actualización",

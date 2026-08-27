@@ -17,6 +17,7 @@
 #include "HTML/JS_Commun.js.h"
 #include "HTML/JS_Main.js.h"
 #include "Ecran/pageAutBrute.h"
+#include "Libreview.h"
 #include "Langues/Langue.h"
 #include "Langues/en.h"
 #include "Langues/fr.h"
@@ -176,9 +177,13 @@ void Init_Server()
 
                 // Global account fields
                 if (request->hasParam("region", true)) dexcomRegion = P("region");
-                if (request->hasParam("lemail", true)) libreEmail = P("lemail");
-                if (request->hasParam("lzone", true)) libreZone = P("lzone");
-                { String lp = P("lpass"); if (lp.length() > 0) librePass = lp; }
+                bool libreAccountChanged = false;
+                if (request->hasParam("lemail", true) && P("lemail") != libreEmail)
+                { libreEmail = P("lemail"); libreAccountChanged = true; }
+                if (request->hasParam("lzone", true) && P("lzone") != libreZone)
+                { libreZone = P("lzone"); libreAccountChanged = true; }
+                { String lp = P("lpass"); if (lp.length() > 0 && lp != librePass)
+                { librePass = lp; libreAccountChanged = true; } }
 
                 for (int i = 0; i < MAX_PERSONS; i++)
                 {
@@ -198,8 +203,14 @@ void Init_Server()
                     // force a fresh login on next poll
                     persons[i].dexcomSessionId = "";
                     persons[i].dexcomAccountId = "";
+                    // drop the pinned Libre patient so a renamed person re-matches by name
+                    persons[i].librePatientId = "";
                     persons[i].lastDemandeMillis = 0;
                 }
+                // Libre account changed: drop the cached auth token (and server URL)
+                // so the next poll logs in fresh — no reboot needed.
+                if (libreAccountChanged)
+                    clearLibreViewCache();
                 activePersonsCount = 0;
                 for (int i = 0; i < MAX_PERSONS; i++)
                     if (persons[i].configured) activePersonsCount++;

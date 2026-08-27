@@ -7,181 +7,333 @@
 #include "Libreview.h"
 #include "Langues/Langue.h"
 
-// variables globales
+// ==============================================================
+// LibreLinkUp: ONE follower account (global libreEmail/librePass)
+// sees ALL followed patients. A single /llu/connections call
+// returns every patient's latest glucose, which we distribute to
+// the SENSOR_LIBRE persons by matching first names.
+// ==============================================================
+
+// Account-level session cache. The auth token is valid for months:
+// we log in once and only again when the server rejects the token.
+// (LibreLinkUp rate-limits logins and can lock accounts that
+// re-authenticate on every poll, so never log in per reading.)
 static String AuthToken = "";
-static String userID = "";
-static String patientId = "";
 static String SHAuserID = "";
-static bool UserOK = false;
+static String baseURL = "";
 
-// URL base de l’API (Europe ici, peut être différente)
-// sur https://api.libreview.io", on reçoit plein d'info
-// sur "https://api-eu.libreview.io"; il suggere une redirection ver fr
-// const char *baseURL = "https://api-fr.libreview.io"; //"https://api-eu2.libreview.io";
-// Proxy si problème
-// const char *baseURL = "https://libreview-proxy.onrender.com/fr";
+// Account-level back-off after a server error (shared by all persons,
+// since all Libre persons are served by the same requests).
+static unsigned long libreBackoffUntilMillis = 0;
 
-static String baseURL = ""; // "https://api-fr.libreview.io"; //"https://api-eu2.libreview.io";
+// One-shot warnings (avoid repeating the same message every poll)
+static bool warnedNoAccount = false;
+static bool warnedNoMatch[MAX_PERSONS] = {false};
 
 String getSHA256(String payload);
 
+static void addLibreHeaders(HTTPClient &https)
+{
+  https.addHeader("Content-Type", "application/json");
+  https.addHeader("Accept", "application/json");
+  https.addHeader("User-Agent", "okhttp/4.9.0");
+  https.addHeader("connection", "Keep-Alive");
+  https.addHeader("product", "llu.android");
+  https.addHeader("version", "4.17.0"); // LibreLinkUp app version (server enforces a minimum)
+}
+
+// Lowercase + strip French/Latin accents + drop non-ASCII, so that
+// "Léa" matches "lea" and screen names match LibreView first names.
+static String normalizeName(const String &s)
+{
+  String out = "";
+  for (unsigned int i = 0; i < s.length(); i++)
+  {
+    unsigned char c = s[i];
+    if (c == 0xC3 && i + 1 < s.length())
+    {
+      // UTF-8 Latin-1 supplement (2 bytes): map accented letter to its base letter
+      unsigned char d = s[++i];
+      if ((d >= 0x80 && d <= 0x86) || (d >= 0xA0 && d <= 0xA6)) out += 'a';
+      else if (d == 0x87 || d == 0xA7) out += 'c';
+      else if ((d >= 0x88 && d <= 0x8B) || (d >= 0xA8 && d <= 0xAB)) out += 'e';
+      else if ((d >= 0x8C && d <= 0x8F) || (d >= 0xAC && d <= 0xAF)) out += 'i';
+      else if (d == 0x91 || d == 0xB1) out += 'n';
+      else if ((d >= 0x92 && d <= 0x96) || (d >= 0xB2 && d <= 0xB6)) out += 'o';
+      else if ((d >= 0x99 && d <= 0x9C) || (d >= 0xB9 && d <= 0xBC)) out += 'u';
+    }
+    else if (c < 0x80)
+    {
+      out += (char)tolower(c);
+    }
+  }
+  out.trim();
+  return out;
+}
+
 bool loginLibreLinkUp()
 {
-  bool logUserOK = false;
   ServerConnu = false;
-  baseURL = "https://api.libreview.io";
-  if (libreZone != "")
-    baseURL = "https://api-" + libreZone + ".libreview.io";
+  AuthToken = "";
+  SHAuserID = "";
 
-  Serial.println("Tentative de connexion à LibreLinkUp sur " + baseURL);
-  delay(10);
-  HTTPClient https;
-  String loginURL = baseURL + "/llu/auth/login";
-
-  https.begin(loginURL);
-  https.setTimeout(15000); // HTTPClient en ms
-
-  https.addHeader("Content-Type", "application/json");
-  https.addHeader("Accept", "application/json");
-  // Mes rajouts
-  https.addHeader("User-Agent", "okhttp/4.9.0");
-  https.addHeader("connection", "Keep-Alive");
-  https.addHeader("product", "llu.android");
-  https.addHeader("version", "4.17.0"); // Mettre le numéro de version de LinkLibre Up
-
-  // JSON avec email & mot de passe
-  String payload = "{\"email\":\"" + libreEmail + "\",\"password\":\"" + librePass + "\"}";
-
-  int httpCode = https.POST(payload);
-  String response = https.getString();
-  LoginJSON = response;
-  if (httpCode == HTTP_CODE_OK)
+  if (baseURL == "")
   {
+    baseURL = "https://api.libreview.io";
+    if (libreZone != "")
+      baseURL = "https://api-" + libreZone + ".libreview.io";
+  }
+
+  // Two attempts max: the first may answer "redirect" with the right
+  // regional server, in which case we retry once on that server.
+  for (int attempt = 0; attempt < 2; attempt++)
+  {
+    Serial.println("Connexion à LibreLinkUp: " + baseURL);
+    HTTPClient https;
+    https.begin(baseURL + "/llu/auth/login");
+    https.setTimeout(15000);
+    addLibreHeaders(https);
+
+    String payload = "{\"email\":\"" + libreEmail + "\",\"password\":\"" + librePass + "\"}";
+    int httpCode = https.POST(payload);
+    String response = https.getString();
+    https.end();
+    LoginJSON = response;
+
+    if (httpCode != HTTP_CODE_OK)
+    {
+      Serial.println("Login LibreLinkUp échoué: " + String(httpCode));
+      Serial.println("Réponse: " + response);
+      EcranPrintln(HEURE + T("LoginFailed") + String(httpCode), RGB565_ORANGE);
+      // Server-side error, connection failure or rate-limit: back off >=120 s
+      // (same policy as Dexcom).
+      if (httpCode >= 500 || httpCode <= 0 || httpCode == 429)
+        libreBackoffUntilMillis = millis() + 120000;
+      return false;
+    }
+
     ServerConnu = true;
-    Serial.println("Login OK: " + String(response.length()) + " caractères");
+
     JsonDocument doc;
-    deserializeJson(doc, response);
+    if (deserializeJson(doc, response))
+    {
+      Serial.println("Erreur parsing JSON login LibreLinkUp");
+      return false;
+    }
 
-    // Mon code
+    // Regional redirect: the server names the region our account lives in.
+    if (doc["data"]["redirect"] | false)
+    {
+      String region = doc["data"]["region"].as<String>();
+      if (region != "" && attempt == 0)
+      {
+        baseURL = "https://api-" + region + ".libreview.io";
+        Serial.println("Redirection LibreLinkUp vers la région: " + region);
+        continue;
+      }
+      Serial.println("Redirection LibreLinkUp invalide");
+      return false;
+    }
+
+    // status 0 = OK; 2 = bad credentials; 4 = new terms of use must be
+    // accepted once in the LibreLinkUp phone app before the API works again.
+    int status = doc["status"] | 0;
+    if (status != 0)
+    {
+      Serial.println("LibreLinkUp status: " + String(status));
+      if (status == 4)
+        EcranPrintln(HEURE + T("LibreToU"), RGB565_ORANGE);
+      else
+        EcranPrintln(HEURE + T("LoginFailed") + "status " + String(status), RGB565_ORANGE);
+      return false;
+    }
+
     AuthToken = doc["data"]["authTicket"]["token"].as<String>();
-
-    Serial.println("Longueur : " + AuthToken.length());
-
-    userID = doc["data"]["user"]["id"].as<String>();
+    String userID = doc["data"]["user"]["id"].as<String>();
     SHAuserID = getSHA256(userID);
-    Serial.println("userID: " + userID);
-    if (AuthToken.length() > 100)
-      logUserOK = true;
+    Serial.println("Login LibreLinkUp OK, token: " + String(AuthToken.length()) + " caractères");
+    return AuthToken.length() > 100;
   }
-  else
-  {
-    String S = HEURE + T("LoginFailed") + String(httpCode);
-    EcranPrintln(S, RGB565_ORANGE);
-  }
-
-  https.end();
-  return logUserOK;
+  return false;
 }
-//============Obtention dernière Glycémie============
-void getConnection()
+
+// One GET /llu/connections refreshes EVERY followed patient at once.
+static void getLibreConnections()
 {
-  String S;
   HTTPClient https;
-  String url = String(baseURL) + "/llu/connections";
-
-  https.begin(url);
-  https.setTimeout(15000); // HTTPClient en ms
-
-  https.addHeader("Content-Type", "application/json");
-  https.addHeader("Accept", "application/json");
-  // Mes rajouts
-  https.addHeader("User-Agent", "okhttp/4.9.0");
-  https.addHeader("connection", "Keep-Alive");
-  https.addHeader("product", "llu.android");
-  https.addHeader("version", "4.17.0");
-
-  // Header d’authentification
-
+  https.begin(baseURL + "/llu/connections");
+  https.setTimeout(15000);
+  addLibreHeaders(https);
   https.addHeader("Authorization", "Bearer " + AuthToken);
-
   https.addHeader("Account-Id", SHAuserID);
 
   int httpCode = https.GET();
-
-  if (httpCode == HTTP_CODE_OK)
-  {
-    String response = https.getString();
-    Serial.println("Données connexion: " + String(response.length()) + " caractères");
-
-    // StaticJsonDocument<512> doc;
-    JsonDocument doc;
-    deserializeJson(doc, response);
-    ConnectionJSON = response;
-
-    String glycemieStr = doc["data"][0]["glucoseItem"]["ValueInMgPerDl"].as<String>();
-    if (glycemieStr == "")
-    {
-      persons[0].glucoseMgDl = 0;
-    }
-    else
-    {
-      persons[0].glucoseMgDl = glycemieStr.toInt();
-    }
-    String DateGly = doc["data"][0]["glucoseItem"]["Timestamp"].as<String>();
-    persons[0].targetLow = doc["data"][0]["targetLow"];
-    persons[0].targetHigh = doc["data"][0]["targetHigh"];
-    S = HEURE + T("LastGlyco") + formatGlucoseValue(persons[0].glucoseMgDl) + " " + getGlucoseUnitLabel() + " " + T("le") + DateGly;
-    EcranPrintln(S);
-    persons[0].trendArrow = doc["data"][0]["glucoseItem"]["TrendArrow"].as<int8_t>();
-    persons[0].lastReceptionMillis = millis();
-    Serial.println();
-    Serial.println("TrendArrow : " + String(persons[0].trendArrow));
-    Serial.println();
-    Serial.println("targetLow : " + String(persons[0].targetLow));
-    Serial.println("targetHigh : " + String(persons[0].targetHigh));
-
-    patientId = doc["data"][0]["patientId"].as<String>();
-
-    const char *timestamp = doc["data"][0]["glucoseItem"]["Timestamp"].as<const char *>();
-    persons[0].lastGlyUnixTime = convertToUnix(timestamp);
-    persons[0].lastOkMillis = millis();
-  }
-  else
-  {
-    S = HEURE + T("GlucoFailed") + String(httpCode);
-    EcranPrintln(S, RGB565_ORANGE);
-  }
-
+  String response = https.getString();
   https.end();
+
+  if (httpCode != HTTP_CODE_OK)
+  {
+    Serial.println("Erreur lecture LibreLinkUp: " + String(httpCode));
+    EcranPrintln(HEURE + T("GlucoFailed") + String(httpCode), RGB565_ORANGE);
+    // Token rejected: drop it so the next poll re-authenticates.
+    if (httpCode == 401)
+      AuthToken = "";
+    if (httpCode >= 500 || httpCode <= 0 || httpCode == 429)
+      libreBackoffUntilMillis = millis() + 120000;
+    return;
+  }
+
+  ConnectionJSON = response;
+  JsonDocument doc;
+  if (deserializeJson(doc, response))
+  {
+    Serial.println("Erreur parsing JSON connections LibreLinkUp");
+    return;
+  }
+  JsonArray connections = doc["data"].as<JsonArray>();
+  Serial.println("LibreLinkUp: " + String(connections.size()) + " patient(s) suivi(s)");
+
+  // Count the Libre persons first: with exactly one person and one
+  // patient, we match them regardless of names (nothing to disambiguate).
+  int librePersons = 0;
+  for (int i = 0; i < MAX_PERSONS; i++)
+    if (persons[i].configured && persons[i].sensorType == SENSOR_LIBRE)
+      librePersons++;
+
+  for (int i = 0; i < MAX_PERSONS; i++)
+  {
+    Person &person = persons[i];
+    if (!person.configured || person.sensorType != SENSOR_LIBRE)
+      continue;
+
+    String target = normalizeName(person.name);
+    JsonObject match;
+
+    for (JsonObject conn : connections)
+    {
+      // A previous match pinned the patientId: reuse it (robust to renames).
+      if (person.librePatientId != "" && person.librePatientId == conn["patientId"].as<String>())
+      {
+        match = conn;
+        break;
+      }
+      String first = normalizeName(conn["firstName"].as<String>());
+      // First-name match, accent/case-insensitive; prefix tolerated both
+      // ways ("lea" vs "lea-marie", screen name "papa d." vs "papa").
+      if (target != "" && first != "" &&
+          (first == target || first.startsWith(target) || target.startsWith(first)))
+      {
+        match = conn;
+        break;
+      }
+    }
+
+    if (match.isNull() && librePersons == 1 && connections.size() == 1)
+      match = connections[0];
+
+    if (match.isNull())
+    {
+      if (!warnedNoMatch[i])
+      {
+        warnedNoMatch[i] = true;
+        EcranPrintln(HEURE + T("LibreNoMatch") + person.name, RGB565_ORANGE);
+        for (JsonObject conn : connections)
+          Serial.println("  Patient disponible: " + conn["firstName"].as<String>() + " " + conn["lastName"].as<String>());
+      }
+      continue;
+    }
+    warnedNoMatch[i] = false;
+
+    person.librePatientId = match["patientId"].as<String>();
+
+    JsonObject g = match["glucoseItem"];
+    person.glucoseMgDl = g["ValueInMgPerDl"] | 0;
+    // Libre trend scale (1=falling fast ... 3=stable ... 5=rising fast)
+    // maps 1:1 onto the display scale used for Dexcom (1=Down ... 5=Up).
+    person.trendArrow = g["TrendArrow"] | 0;
+    person.targetLow = match["targetLow"] | person.targetLow;
+    person.targetHigh = match["targetHigh"] | person.targetHigh;
+
+    const char *timestamp = g["Timestamp"]; // "M/D/YYYY H:MM:SS AM"
+    if (timestamp != nullptr)
+      person.lastGlyUnixTime = convertToUnix(timestamp);
+
+    // The API answered for this patient: the acquisition chain is alive,
+    // even during a sensor gap (value 0) — same rationale as Dexcom's
+    // no-glucose reboot protection.
+    person.lastOkMillis = millis();
+
+    EcranPrintln(HEURE + person.name + T("LastGlyco") + formatGlucoseValue(person.glucoseMgDl) +
+                 " " + getGlucoseUnitLabel() + " " + T("le") + unixToTimestamp(person.lastGlyUnixTime));
+    Serial.println(person.name + ": " + formatGlucoseValue(person.glucoseMgDl) + " " +
+                   getGlucoseUnitLabel() + ", TrendArrow " + String(person.trendArrow));
+  }
 }
 
-void LectureGlycemie()
+void LectureLibre()
 {
+  // Adaptive polling: is any Libre person due for a refresh?
+  bool anyLibre = false;
+  bool due = false;
+  for (int i = 0; i < MAX_PERSONS; i++)
+  {
+    Person &person = persons[i];
+    if (!person.configured || person.sensorType != SENSOR_LIBRE)
+      continue;
+    anyLibre = true;
 
-  if (UserOK)
-  {
-    getConnection(); // Dernière valeur de glycémie
-    UserOK = false;
+    // Base cadence 2 min (Libre pushes ~every minute); retry faster when
+    // the reading is overdue, then relax if the server looks down.
+    person.recurMillis = RecurrenceGlycemie;
+    if (person.ageSeconds > 300)
+      person.recurMillis = 30000;
+    if (person.ageSeconds > 500)
+      person.recurMillis = 90000;
+
+    if (person.lastDemandeMillis == 0 ||
+        millis() - person.lastReceptionMillis > person.recurMillis)
+      due = true;
   }
-  persons[0].recurMillis = RecurrenceGlycemie;
-  if (persons[0].ageSeconds > 300)     // Si la dernière glycémie a plus de 5 minutes (300s), on tente une nouvelle lecture
-    persons[0].recurMillis = 30000; // 30 secondes pour tenter de récupérer une nouvelle glycémie plus rapidement
-  if (persons[0].ageSeconds > 500)     // On ne s'excite pas, on passe à 1.5 minute pour éviter de faire trop de requêtes si le serveur est en panne ou si on a un problème de connexion
-    persons[0].recurMillis = 90000;
-  if (millis() - persons[0].lastReceptionMillis > persons[0].recurMillis || persons[0].lastDemandeMillis == 0)
+  if (!anyLibre || !due)
+    return;
+
+  if (libreEmail == "" || librePass == "")
   {
-    persons[0].lastDemandeMillis = millis(); // Met à jour le temps dernière demande de glycémie avant de faire la lecture
-    if (libreEmail != "" && librePass != "")
+    if (!warnedNoAccount)
     {
-      Serial.println("On demande une nouvelle glycémie...");
-      UserOK = loginLibreLinkUp();
+      warnedNoAccount = true;
+      EcranPrintln(T("LinkUpIndefini"), RGB565_ORANGE);
     }
-    else
-    {
-      EcranPrintln(T("LinkUpIndefini"));
-    }
-    persons[0].lastReceptionMillis = millis(); // Met à jour le temps du dernier relevé reussi ou pas  de glycémie
+    return;
   }
+
+  // Respect a server-requested back-off (rollover-safe comparison).
+  if (libreBackoffUntilMillis != 0 &&
+      (long)(libreBackoffUntilMillis - millis()) > 0)
+    return;
+
+  // One shared poll serves every Libre person: stamp them all.
+  for (int i = 0; i < MAX_PERSONS; i++)
+  {
+    if (persons[i].configured && persons[i].sensorType == SENSOR_LIBRE)
+      persons[i].lastDemandeMillis = millis();
+  }
+
+  Serial.println("On demande les glycémies LibreLinkUp...");
+  if (AuthToken == "" && !loginLibreLinkUp())
+  {
+    // Login failed: still stamp the attempt so the adaptive intervals apply.
+    for (int i = 0; i < MAX_PERSONS; i++)
+      if (persons[i].configured && persons[i].sensorType == SENSOR_LIBRE)
+        persons[i].lastReceptionMillis = millis();
+    return;
+  }
+
+  getLibreConnections();
+
+  for (int i = 0; i < MAX_PERSONS; i++)
+    if (persons[i].configured && persons[i].sensorType == SENSOR_LIBRE)
+      persons[i].lastReceptionMillis = millis();
 }
 
 String getSHA256(String payload)
@@ -215,9 +367,13 @@ void clearLibreViewCache()
 {
   Serial.println("Clearing LibreView cache...");
   AuthToken = "";
-  userID = "";
-  patientId = "";
   SHAuserID = "";
-  UserOK = false;
   baseURL = "";
+  libreBackoffUntilMillis = 0;
+  warnedNoAccount = false;
+  for (int i = 0; i < MAX_PERSONS; i++)
+  {
+    persons[i].librePatientId = "";
+    warnedNoMatch[i] = false;
+  }
 }

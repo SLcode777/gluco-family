@@ -150,15 +150,10 @@ void loop()
   LireSerial();
   if (HeureValide)
   {
-    // Call appropriate sensor reading function based on sensor type
-    if (persons[0].sensorType == SENSOR_LIBRE)
-    {
-      LectureGlycemie();
-    }
-    else if (persons[0].sensorType == SENSOR_DEXCOM)
-    {
-      LectureDexcom();
-    }
+    // Poll both providers: each one only handles its own persons,
+    // so a mixed family (Libre kids + Dexcom parent) works.
+    LectureLibre();
+    LectureDexcom();
     FormatteHeureDate();
   }
   loopEcran();

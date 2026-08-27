@@ -25,6 +25,9 @@ struct Person {
   String dexcomSessionId;
   String dexcomAccountId;
 
+  // LibreLinkUp patient matched to this person (runtime cache, not persisted)
+  String librePatientId;
+
   // Last measurement
   int16_t glucoseMgDl;               // 0 = no measurement
   int8_t trendArrow;                 // 0 = unknown

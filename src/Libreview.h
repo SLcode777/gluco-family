@@ -4,6 +4,7 @@
 #include "Heure.h"
 #include "Ecran/Gestion.h"
 
-void LectureGlycemie();
+// LibreLinkUp API functions (one follower account, multi-patient)
+void LectureLibre();
 bool loginLibreLinkUp();
 void clearLibreViewCache();
