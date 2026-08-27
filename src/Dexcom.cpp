@@ -18,8 +18,22 @@ const char* APP_ID = "d89443d2-327c-4a6f-89e5-496bbb0317db";
 
 bool loginDexcomShare(Person& person)
 {
+    // Reuse a cached session if we still have one — this avoids a needless
+    // login request on every poll. The session is only dropped when Dexcom
+    // actually rejects it (see getDexcomReadings), so a non-empty value here
+    // means a previous login already configured dexcomBaseURL / APP_ID.
+    //
+    // A real Dexcom session ID is a 36-char GUID, so ">30" means "looks like a
+    // valid session" rather than just "non-empty" — it rejects truncated/garbage
+    // values. This is the same threshold loginDexcomShare uses when it stores the
+    // session, so the reuse criterion stays consistent with the validity check.
+    if (person.dexcomSessionId.length() > 30) {
+        ServerConnu = true;
+        return true;
+    }
+
     ServerConnu = false;
-    
+
     if (dexcomRegion == "US") {
         dexcomBaseURL = "https://share2.dexcom.com";
         APP_ID = "d89443d2-327c-4a6f-89e5-496bbb0317db";
@@ -144,7 +158,11 @@ void getDexcomReadings(Person& person)
     
     String url = dexcomBaseURL + String(DEXCOM_GLUCOSE_ENDPOINT) +
                  "?sessionId=" + person.dexcomSessionId +
-                 "&minutes=1440&maxCount=288"; // 288 = 24h of 5-min readings
+                 "&minutes=1440&maxCount=3"; // maxCount keeps the payload small (screen reads the
+                                             // latest), while the wide window still finds the last
+                                             // known reading after a sensor gap — so lastOkMillis
+                                             // keeps refreshing and the no-glucose reboot never
+                                             // fires just because a sensor is warming up.
 
     Serial.println("URL Dexcom: " + url);
     https.begin(url);
@@ -231,6 +249,23 @@ void getDexcomReadings(Person& person)
     } else {
         EcranPrintln(HEURE + T("GlucoFailed") + String(httpCode), RGB565_ORANGE);
         Serial.println("Erreur lecture Dexcom: " + response);
+
+        // If Dexcom rejected our session, drop it so the next poll re-authenticates.
+        // (Expired/invalid sessions come back as 401, or as a 500 whose body names
+        //  the session. A pure server outage — 500 "Internal Server Error" or a 504
+        //  gateway timeout — does NOT name the session, so it won't clear it here.)
+        if (httpCode == 401 ||
+            response.indexOf("SessionId") >= 0 ||
+            response.indexOf("SessionNotValid") >= 0) {
+            Serial.println("Session Dexcom invalide — réauthentification au prochain poll");
+            person.dexcomSessionId = "";
+        }
+
+        // Server-side error (5xx) or connection failure (<=0): back off >=120 s,
+        // same policy as loginDexcomShare (the glucose read can now hit the
+        // outage directly, since login is skipped when a session is cached).
+        if (httpCode >= 500 || httpCode <= 0)
+            person.backoffUntilMillis = millis() + 120000;
     }
 
     https.end();
